@@ -3,6 +3,7 @@ import "server-only";
 import type { JwtPayload } from "@supabase/supabase-js";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { env } from "@/env";
 import { createClient } from "@/lib/supabase/server";
 
 export type AdminSession = {
@@ -11,22 +12,13 @@ export type AdminSession = {
   userId: string;
 };
 
-function configuredAdminEmails() {
-  return new Set(
-    (process.env.SUPABASE_ADMIN_EMAILS ?? "")
-      .split(",")
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean),
-  );
-}
-
 export function isAdminClaims(claims: JwtPayload | null | undefined) {
   if (!claims) {
     return false;
   }
 
   const email = claims.email?.toLowerCase();
-  const adminEmails = configuredAdminEmails();
+  const adminEmails = new Set(env.SUPABASE_ADMIN_EMAILS);
   const appRole = claims.app_metadata?.role;
   const appRoles = claims.app_metadata?.roles;
 

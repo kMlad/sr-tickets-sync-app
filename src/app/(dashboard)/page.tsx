@@ -4,8 +4,7 @@ export default function DashboardPage() {
       <section>
         <h1 className="text-2xl font-semibold text-zinc-950">Dashboard</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-          Auth is configured. Add the ticket sync workflow here once the admin
-          surface is ready.
+          Ticket sync workflow.
         </p>
       </section>
     </main>
