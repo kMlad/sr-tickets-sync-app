@@ -8,11 +8,27 @@ function singleValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+function formatRelativeTime(value: string) {
+  const date = new Date(value);
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const units: { unit: Intl.RelativeTimeFormatUnit; seconds: number }[] = [
+    { unit: "year", seconds: 31_536_000 },
+    { unit: "month", seconds: 2_592_000 },
+    { unit: "week", seconds: 604_800 },
+    { unit: "day", seconds: 86_400 },
+    { unit: "hour", seconds: 3_600 },
+    { unit: "minute", seconds: 60 },
+    { unit: "second", seconds: 1 },
+  ];
+
+  for (const { unit, seconds } of units) {
+    if (Math.abs(diffSeconds) >= seconds || unit === "second") {
+      return formatter.format(Math.round(diffSeconds / seconds), unit);
+    }
+  }
+
+  return formatter.format(0, "second");
 }
 
 function formatDate(value: string) {
@@ -221,7 +237,7 @@ export default async function AttendeesPage({
                     </td>
                     <td className="px-5 py-4 text-zinc-600">
                       <span className="block">
-                        {formatDateTime(attendee.claimedAt)}
+                        {formatRelativeTime(attendee.claimedAt)}
                       </span>
                       <span className="mt-1 block text-xs text-zinc-500">
                         Week of {formatWeekValue(attendee.week)}
