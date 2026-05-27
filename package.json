@@ -9,9 +9,13 @@
     "lint": "biome check",
     "format": "biome format --write",
     "opensrc": "opensrc",
-    "opensrc:fetch": "opensrc fetch next @supabase/supabase-js supabase/cli@v2.100.1"
+    "opensrc:fetch": "opensrc fetch next @supabase/supabase-js supabase/cli@v2.100.1",
+    "db:diff": "supabase db diff",
+    "db:reset": "supabase db reset",
+    "db:up": "supabase migration up"
   },
   "dependencies": {
+    "@shopify/shopify-api": "^13.0.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
     "@t3-oss/env-nextjs": "^0.13.11",
@@ -28,6 +32,7 @@
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
     "opensrc": "0.7.2",
+    "supabase": "2.100.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
