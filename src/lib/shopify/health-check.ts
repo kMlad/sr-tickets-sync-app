@@ -12,12 +12,7 @@ type ShopHealth = {
 
 export async function verifyShopConnection(session: Session) {
   const client = await createAdminGraphqlClient(session);
-  const response = await client.query<{
-    data: {
-      shop: ShopHealth;
-    };
-  }>({
-    data: `#graphql
+  const response = await client.request<{ shop: ShopHealth }>(`#graphql
       query ShopifyConnectionHealth {
         shop {
           id
@@ -25,10 +20,9 @@ export async function verifyShopConnection(session: Session) {
           myshopifyDomain
         }
       }
-    `,
-  });
+    `);
 
-  const shop = response.body?.data?.shop;
+  const shop = response.data?.shop;
 
   if (!shop) {
     throw new Error("Shopify health check returned no shop data.");

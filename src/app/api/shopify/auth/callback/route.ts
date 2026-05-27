@@ -3,13 +3,11 @@ import { getShopify } from "@/lib/shopify/client";
 import { verifyShopConnection } from "@/lib/shopify/health-check";
 import { upsertInstallationFromSession } from "@/lib/shopify/installations";
 import { assertAllowedShop } from "@/lib/shopify/shop";
-import { applySetCookieHeaders } from "@/lib/shopify/utils";
+import { applySetCookieHeaders, getShopifyAppUrl } from "@/lib/shopify/utils";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-
   try {
     const shopify = getShopify();
     const { headers, session } = await shopify.auth.callback({
@@ -21,7 +19,7 @@ export async function GET(request: Request) {
     await verifyShopConnection(session);
 
     const response = NextResponse.redirect(
-      new URL("/shopify?installed=1", url),
+      new URL("/shopify?installed=1", getShopifyAppUrl()),
     );
     applySetCookieHeaders(response.headers, headers);
 

@@ -2,8 +2,25 @@ import { NextResponse } from "next/server";
 import { getShopify, SHOPIFY_AUTH_CALLBACK_PATH } from "@/lib/shopify/client";
 import { getActiveInstallation } from "@/lib/shopify/installations";
 import { assertAllowedShop } from "@/lib/shopify/shop";
+import { getShopifyAppUrl, getShopifyAuthUrl } from "@/lib/shopify/utils";
 
 export const runtime = "nodejs";
+
+function getRequestOrigin(request: Request) {
+  const url = new URL(request.url);
+  const forwardedHost =
+    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ??
+    request.headers.get("host");
+  const forwardedProto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ??
+    url.protocol.replace(":", "");
+
+  if (!forwardedHost) {
+    return url.origin;
+  }
+
+  return `${forwardedProto}://${forwardedHost}`;
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -19,6 +36,12 @@ export async function GET(request: Request) {
   try {
     const shop = assertAllowedShop(shopParam);
     const query = Object.fromEntries(url.searchParams.entries());
+    const authUrl = getShopifyAuthUrl(shop);
+    authUrl.search = url.search;
+
+    if (getRequestOrigin(request) !== authUrl.origin) {
+      return NextResponse.redirect(authUrl);
+    }
 
     const shopify = getShopify();
 
@@ -32,7 +55,9 @@ export async function GET(request: Request) {
     const existingInstallation = await getActiveInstallation(shop);
 
     if (existingInstallation) {
-      return NextResponse.redirect(new URL("/shopify?connected=1", url));
+      return NextResponse.redirect(
+        new URL("/shopify?connected=1", getShopifyAppUrl()),
+      );
     }
 
     const response = await shopify.auth.begin({

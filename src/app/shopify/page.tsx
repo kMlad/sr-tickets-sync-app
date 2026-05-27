@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getInstallationByShop } from "@/lib/shopify/installations";
 import { getAllowedShopDomain } from "@/lib/shopify/shop";
-import { hasRequiredScopes } from "@/lib/shopify/utils";
+import { getShopifyAuthUrl, hasRequiredScopes } from "@/lib/shopify/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,7 @@ export default async function ShopifyStatusPage({
         {!isConnected ? (
           <Link
             className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-            href={`/api/shopify/auth?shop=${encodeURIComponent(shop)}`}
+            href={getShopifyAuthUrl(shop).toString()}
           >
             Install / reconnect app
           </Link>

@@ -2,6 +2,20 @@ import "server-only";
 
 import { env } from "@/env";
 
+export function getShopifyAppUrl(path = "/") {
+  const url = new URL(env.SHOPIFY_APP_URL);
+  url.pathname = path;
+  url.search = "";
+  url.hash = "";
+  return url;
+}
+
+export function getShopifyAuthUrl(shop: string) {
+  const url = getShopifyAppUrl("/api/shopify/auth");
+  url.searchParams.set("shop", shop);
+  return url;
+}
+
 export function applySetCookieHeaders(
   target: Headers,
   source: HeadersInit | undefined,

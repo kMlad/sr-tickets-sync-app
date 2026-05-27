@@ -2,7 +2,7 @@
 
 client_id = "eb152ae95d496b7cd19de5052414b65d"
 name = "sr-tickets-sync-app-dev"
-application_url = "https://d21a-31-11-88-17.ngrok-free.app/api/shopify/auth"
+application_url = "https://d21a-31-11-88-17.ngrok-free.app"
 embedded = false
 
 [access_scopes]

@@ -2,7 +2,7 @@
 
 client_id = "34643a36e680b5ac9c6075c5d793596f"
 name = "sr-tickets-sync-app"
-application_url = "https://example.com/api/shopify/auth"
+application_url = "https://example.com"
 embedded = false
 
 [access_scopes]
