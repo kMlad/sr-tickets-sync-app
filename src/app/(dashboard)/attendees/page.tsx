@@ -1,4 +1,21 @@
-import Link from "next/link";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Container } from "@/components/ui/Container";
+import {
+  cardClass,
+  cardHeaderClass,
+  h2Class,
+  labelClass,
+  selectClass,
+  subtleTextClass,
+  tableClass,
+  tableTbodyClass,
+  tableTdClass,
+  tableTdMetaClass,
+  tableTdPrimaryClass,
+  tableThClass,
+  tableTheadClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import {
   type AttendeeWeekOption,
   getAttendeesDashboard,
@@ -94,33 +111,33 @@ export default async function AttendeesPage({
   );
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <Container className="flex flex-1 flex-col gap-8 py-10">
+      <section className="animate-rise flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-950">Attendees</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+          <SectionLabel tone="dark">Roster</SectionLabel>
+          <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-cream">
+            <span className="text-gradient">Attendees</span>
+          </h1>
+          <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
             Review submitted attendee details for{" "}
-            <span className="font-medium text-zinc-950">{data.shop}</span> and
+            <span className="font-medium text-cream">{data.shop}</span> and
             export the current view for Agorify.
           </p>
         </div>
-        <Link
-          className="inline-flex h-10 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-          href={exportHref}
-        >
+        <ButtonLink href={exportHref} size="md">
           Export CSV
-        </Link>
+        </ButtonLink>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className={`${cardClass} p-5`}>
         <form
           className="grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto]"
           method="get"
         >
-          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-            Event
+          <label className="flex flex-col gap-2">
+            <span className={labelClass}>Event</span>
             <select
-              className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+              className={selectClass}
               defaultValue={data.filters.eventId ?? ""}
               name="eventId"
             >
@@ -133,10 +150,10 @@ export default async function AttendeesPage({
             </select>
           </label>
 
-          <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-            Submission week
+          <label className="flex flex-col gap-2">
+            <span className={labelClass}>Submission week</span>
             <select
-              className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+              className={selectClass}
               defaultValue={data.filters.week ?? ""}
               name="week"
             >
@@ -154,31 +171,27 @@ export default async function AttendeesPage({
             </select>
           </label>
 
-          <button
-            className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 lg:self-end"
-            type="submit"
-          >
+          <Button className="lg:self-end" type="submit">
             Apply filters
-          </button>
+          </Button>
 
           {hasFilters ? (
-            <Link
-              className="inline-flex h-11 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 lg:self-end"
+            <ButtonLink
+              className="lg:self-end"
               href="/attendees"
+              variant="secondary"
             >
               Clear
-            </Link>
+            </ButtonLink>
           ) : null}
         </form>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-1 border-b border-zinc-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <section className={cardClass}>
+        <div className={cardHeaderClass}>
           <div>
-            <h2 className="text-base font-semibold text-zinc-950">
-              Submitted attendee details
-            </h2>
-            <p className="mt-1 text-sm text-zinc-600">
+            <h2 className={h2Class}>Submitted attendee details</h2>
+            <p className="mt-1 text-sm text-cream/60">
               {data.attendees.length}{" "}
               {data.attendees.length === 1 ? "attendee" : "attendees"} in the
               current view.
@@ -187,59 +200,62 @@ export default async function AttendeesPage({
         </div>
 
         {data.attendees.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-zinc-600">
+          <p className="px-6 py-8 text-sm text-cream/60">
             {hasFilters
               ? "No submitted attendees match these filters."
               : "No attendees have submitted their details yet."}
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500">
+            <table className={tableClass}>
+              <thead className={tableTheadClass}>
                 <tr>
-                  <th className="px-5 py-3 font-semibold">Attendee</th>
-                  <th className="px-5 py-3 font-semibold">Email</th>
-                  <th className="px-5 py-3 font-semibold">Company</th>
-                  <th className="px-5 py-3 font-semibold">Title</th>
-                  <th className="px-5 py-3 font-semibold">Badge</th>
-                  <th className="px-5 py-3 font-semibold">Event</th>
-                  <th className="px-5 py-3 font-semibold">Order</th>
-                  <th className="px-5 py-3 font-semibold">Submitted</th>
+                  <th className={tableThClass}>Attendee</th>
+                  <th className={tableThClass}>Email</th>
+                  <th className={tableThClass}>Company</th>
+                  <th className={tableThClass}>Title</th>
+                  <th className={tableThClass}>Badge</th>
+                  <th className={tableThClass}>Event</th>
+                  <th className={tableThClass}>Order</th>
+                  <th className={`${tableThClass} text-right`}>Submitted</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className={tableTbodyClass}>
                 {data.attendees.map((attendee) => (
-                  <tr key={attendee.id}>
-                    <td className="px-5 py-4 font-medium text-zinc-950">
-                      {attendee.name}
+                  <tr
+                    className="transition-colors hover:bg-cream/[0.02]"
+                    key={attendee.id}
+                  >
+                    <td className={tableTdPrimaryClass}>{attendee.name}</td>
+                    <td className={tableTdClass}>{attendee.email}</td>
+                    <td className={tableTdClass}>
+                      {attendee.affiliation ?? (
+                        <span className="text-cream/35">—</span>
+                      )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">
-                      {attendee.email}
+                    <td className={tableTdClass}>
+                      {attendee.title ?? (
+                        <span className="text-cream/35">—</span>
+                      )}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">
-                      {attendee.affiliation ?? "Not provided"}
-                    </td>
-                    <td className="px-5 py-4 text-zinc-700">
-                      {attendee.title ?? "Not provided"}
-                    </td>
-                    <td className="px-5 py-4 text-zinc-700">
+                    <td className={tableTdClass}>
                       {attendee.badgeType ??
                         attendee.ticket?.productTitle ??
                         "Ticket"}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">
+                    <td className={tableTdClass}>
                       {attendee.event?.name ?? "Unmapped event"}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">
+                    <td className={tableTdClass}>
                       {attendee.order?.name ??
                         attendee.order?.number ??
                         "Order"}
                     </td>
-                    <td className="px-5 py-4 text-zinc-600">
+                    <td className={`${tableTdMetaClass} text-right`}>
                       <span className="block">
                         {formatRelativeTime(attendee.claimedAt)}
                       </span>
-                      <span className="mt-1 block text-xs text-zinc-500">
+                      <span className="mt-1 block text-[10px] text-cream/40">
                         Week of {formatWeekValue(attendee.week)}
                       </span>
                     </td>
@@ -250,6 +266,6 @@ export default async function AttendeesPage({
           </div>
         )}
       </section>
-    </main>
+    </Container>
   );
 }

@@ -1,4 +1,14 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import {
+  errorMessageClass,
+  inputClass,
+  labelClass,
+  statusBadgeClass,
+  successMessageClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import {
   getManagedOrderDetails,
   sendTicketInvite,
@@ -36,18 +46,6 @@ function pageMessage(error: string | undefined) {
   }
 
   return null;
-}
-
-function statusClass(status: string) {
-  if (status === "assigned") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  if (status === "cancelled") {
-    return "border-red-200 bg-red-50 text-red-700";
-  }
-
-  return "border-zinc-200 bg-zinc-50 text-zinc-700";
 }
 
 export default async function ManageOrderTicketsPage({
@@ -98,14 +96,24 @@ export default async function ManageOrderTicketsPage({
   }
 
   return (
-    <main className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
-      <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <div>
-          <p className="text-sm font-medium text-zinc-500">Startup Rev</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal">
-            Manage attendees
+    <main className="relative min-h-screen overflow-hidden bg-void px-4 py-12 text-cream">
+      <div className="gradient-brand-radial pointer-events-none absolute -top-1/3 left-1/2 h-[820px] w-[820px] -translate-x-1/2 opacity-40" />
+      <div className="noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
+      <section className="animate-rise relative mx-auto flex w-full max-w-3xl flex-col gap-8">
+        <div className="flex flex-col items-center text-center">
+          <Image
+            alt="Startup Rev"
+            className="mb-6 h-8 w-auto"
+            height={32}
+            priority
+            src="/sr-summit-logo-for-dark.svg"
+            width={160}
+          />
+          <SectionLabel tone="dark">Order Management</SectionLabel>
+          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-cream sm:text-4xl">
+            <span className="text-gradient">Manage attendees</span>
           </h1>
-          <p className="mt-3 text-sm text-zinc-600">
+          <p className="mt-3 text-sm text-cream/65">
             {orderDetails.order.name ?? "Ticket order"}
             {orderDetails.order.buyerEmail
               ? ` for ${orderDetails.order.buyerEmail}`
@@ -113,53 +121,47 @@ export default async function ManageOrderTicketsPage({
           </p>
         </div>
 
-        {message ? (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            {message}
-          </p>
-        ) : null}
+        {message ? <p className={errorMessageClass}>{message}</p> : null}
 
-        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-          <div className="border-b border-zinc-200 px-5 py-4">
-            <h2 className="text-base font-semibold">Tickets</h2>
+        <div className="rounded-2xl border border-cream/10 bg-ash/60 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+          <div className="border-b border-cream/10 px-6 py-5">
+            <h2 className="font-display text-lg font-semibold text-cream">
+              Tickets
+            </h2>
           </div>
 
-          <div className="divide-y divide-zinc-200">
+          <div className="divide-y divide-cream/10">
             {orderDetails.tickets.map((ticket, index) => {
               const eventDate = formatDate(ticket.event?.startsAt ?? null);
               const sent = sentTicketId === ticket.id;
               const canInvite = ticket.status === "unassigned";
 
               return (
-                <article className="grid gap-4 p-5" key={ticket.id}>
+                <article className="grid gap-4 p-6" key={ticket.id}>
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-xs font-medium uppercase text-zinc-500">
-                        Ticket {index + 1}
-                      </p>
-                      <h3 className="mt-1 text-lg font-semibold">
+                      <p className={labelClass}>Ticket {index + 1}</p>
+                      <h3 className="mt-1 font-display text-lg font-semibold text-cream">
                         {ticket.productTitle ?? "Ticket"}
                       </h3>
-                      <p className="mt-1 text-sm text-zinc-600">
+                      <p className="mt-1 text-sm text-cream/65">
                         {ticket.event?.name ?? "Event ticket"}
                         {eventDate ? ` · ${eventDate}` : ""}
                       </p>
                     </div>
-                    <span
-                      className={`inline-flex w-fit rounded-md border px-2 py-1 text-xs font-medium ${statusClass(ticket.status)}`}
-                    >
+                    <span className={statusBadgeClass(ticket.status)}>
                       {ticket.status}
                     </span>
                   </div>
 
                   {ticket.attendee ? (
-                    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                    <div className="rounded-md border border-forest/30 bg-forest/10 px-3 py-2 text-sm text-forest">
                       <p>
                         Assigned to {ticket.attendee.name}{" "}
                         <span>({ticket.attendee.email})</span>
                       </p>
                       {ticket.attendee.title || ticket.attendee.affiliation ? (
-                        <p className="mt-1 text-emerald-700">
+                        <p className="mt-1 text-forest/80">
                           {[ticket.attendee.title, ticket.attendee.affiliation]
                             .filter(Boolean)
                             .join(" at ")}
@@ -172,35 +174,28 @@ export default async function ManageOrderTicketsPage({
                       className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
                     >
                       <input name="ticketId" type="hidden" value={ticket.id} />
-                      <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                        Attendee email
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClass}>Attendee email</span>
                         <input
-                          className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                          className={inputClass}
                           defaultValue={ticket.invitedEmail ?? ""}
                           name="email"
                           required
                           type="email"
                         />
                       </label>
-                      <button
-                        className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-                        type="submit"
-                      >
-                        Send link
-                      </button>
+                      <Button type="submit">Send link</Button>
                     </form>
                   ) : (
-                    <p className="rounded-md border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+                    <p className="rounded-md border border-cream/10 bg-cream/[0.04] px-3 py-2 text-sm text-cream/60">
                       This ticket cannot receive invites.
                     </p>
                   )}
 
                   {sent ? (
-                    <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                      Invite sent.
-                    </p>
+                    <p className={successMessageClass}>Invite sent.</p>
                   ) : ticket.invitedEmail && ticket.invitationSentAt ? (
-                    <p className="text-sm text-zinc-500">
+                    <p className="font-mono text-xs text-cream/50">
                       Last sent to {ticket.invitedEmail} on{" "}
                       {formatDate(ticket.invitationSentAt)}.
                     </p>

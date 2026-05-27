@@ -3,6 +3,27 @@ import {
   deleteTicketProductMapping,
   saveTicketProductMapping,
 } from "@/app/(dashboard)/config/actions";
+import { Button } from "@/components/ui/Button";
+import { Container } from "@/components/ui/Container";
+import {
+  cardClass,
+  cardHeaderClass,
+  h2Class,
+  infoMessageClass,
+  inputClass,
+  labelClass,
+  selectClass,
+  statusBadgeClass,
+  subtleTextClass,
+  tableClass,
+  tableTbodyClass,
+  tableTdClass,
+  tableTdNumClass,
+  tableTdPrimaryClass,
+  tableThClass,
+  tableTheadClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { getTicketConfig } from "@/lib/tickets/config";
 
 function singleValue(value: string | string[] | undefined) {
@@ -46,67 +67,52 @@ export default async function ConfigPage({
   const message = statusMessage(singleValue(query.status));
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      <section>
-        <h1 className="text-2xl font-semibold text-zinc-950">Configuration</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+    <Container className="flex flex-1 flex-col gap-8 py-10">
+      <section className="animate-rise">
+        <SectionLabel tone="dark">Setup</SectionLabel>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-cream">
+          <span className="text-gradient">Configuration</span>
+        </h1>
+        <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
           Map Shopify ticket products to Startup Rev events for{" "}
-          <span className="font-medium text-zinc-950">{config.shop}</span>.
+          <span className="font-medium text-cream">{config.shop}</span>.
         </p>
       </section>
 
-      {message ? (
-        <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
-          {message}
-        </p>
-      ) : null}
+      {message ? <p className={infoMessageClass}>{message}</p> : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-950">
-            Create event
-          </h2>
+        <section className={`${cardClass} p-6`}>
+          <h2 className={h2Class}>Create event</h2>
           <form action={createEvent} className="mt-5 flex flex-col gap-4">
-            <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-              Event name
-              <input
-                className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
-                name="name"
-                required
-                type="text"
-              />
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Event name</span>
+              <input className={inputClass} name="name" required type="text" />
             </label>
 
-            <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-              Start date
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Start date</span>
               <input
-                className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                className={inputClass}
                 name="startsAt"
                 type="datetime-local"
               />
             </label>
 
-            <button
-              className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-              type="submit"
-            >
-              Create event
-            </button>
+            <Button type="submit">Create event</Button>
           </form>
         </section>
 
-        <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-zinc-950">
-            Map ticket product
-          </h2>
+        <section className={`${cardClass} p-6`}>
+          <h2 className={h2Class}>Map ticket product</h2>
           <form
             action={saveTicketProductMapping}
             className="mt-5 flex flex-col gap-4"
           >
-            <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-              Event
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Event</span>
               <select
-                className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                className={selectClass}
                 disabled={config.events.length === 0}
                 name="eventId"
                 required
@@ -120,10 +126,10 @@ export default async function ConfigPage({
               </select>
             </label>
 
-            <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-              Shopify product ID
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Shopify product ID</span>
               <input
-                className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                className={inputClass}
                 inputMode="numeric"
                 name="shopifyProductId"
                 pattern="[0-9]+"
@@ -132,73 +138,63 @@ export default async function ConfigPage({
               />
             </label>
 
-            <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-              Product title
-              <input
-                className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
-                name="productTitle"
-                type="text"
-              />
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Product title</span>
+              <input className={inputClass} name="productTitle" type="text" />
             </label>
 
-            <button
-              className="h-11 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
-              disabled={config.events.length === 0}
-              type="submit"
-            >
+            <Button disabled={config.events.length === 0} type="submit">
               Save mapping
-            </button>
+            </Button>
           </form>
         </section>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-zinc-950">
-            Current mappings
-          </h2>
+      <section className={cardClass}>
+        <div className={cardHeaderClass}>
+          <h2 className={h2Class}>Current mappings</h2>
         </div>
 
         {config.mappings.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-zinc-600">
+          <p className="px-6 py-8 text-sm text-cream/60">
             No Shopify products are mapped to events yet.
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500">
+            <table className={tableClass}>
+              <thead className={tableTheadClass}>
                 <tr>
-                  <th className="px-5 py-3 font-semibold">Product</th>
-                  <th className="px-5 py-3 font-semibold">Shopify ID</th>
-                  <th className="px-5 py-3 font-semibold">Event</th>
-                  <th className="px-5 py-3 font-semibold">Action</th>
+                  <th className={tableThClass}>Product</th>
+                  <th className={`${tableThClass} text-right`}>Shopify ID</th>
+                  <th className={tableThClass}>Event</th>
+                  <th className={`${tableThClass} text-right`}>
+                    <span className="sr-only">Action</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className={tableTbodyClass}>
                 {config.mappings.map((mapping) => (
-                  <tr key={mapping.id}>
-                    <td className="px-5 py-4 font-medium text-zinc-950">
+                  <tr
+                    className="transition-colors hover:bg-cream/[0.02]"
+                    key={mapping.id}
+                  >
+                    <td className={tableTdPrimaryClass}>
                       {mapping.productTitle ?? "Ticket product"}
                     </td>
-                    <td className="px-5 py-4 font-mono text-zinc-700">
+                    <td className={tableTdNumClass}>
                       {mapping.shopifyProductId}
                     </td>
-                    <td className="px-5 py-4 text-zinc-700">
-                      {mapping.eventName}
-                    </td>
-                    <td className="px-5 py-4">
+                    <td className={tableTdClass}>{mapping.eventName}</td>
+                    <td className="px-6 py-4 align-middle text-right">
                       <form action={deleteTicketProductMapping}>
                         <input
                           name="mappingId"
                           type="hidden"
                           value={mapping.id}
                         />
-                        <button
-                          className="h-9 rounded-md border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50"
-                          type="submit"
-                        >
+                        <Button size="sm" type="submit" variant="secondary">
                           Remove
-                        </button>
+                        </Button>
                       </form>
                     </td>
                   </tr>
@@ -209,29 +205,29 @@ export default async function ConfigPage({
         )}
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-        <div className="border-b border-zinc-200 px-5 py-4">
-          <h2 className="text-base font-semibold text-zinc-950">Events</h2>
+      <section className={cardClass}>
+        <div className={cardHeaderClass}>
+          <h2 className={h2Class}>Events</h2>
         </div>
 
         {config.events.length === 0 ? (
-          <p className="px-5 py-6 text-sm text-zinc-600">
+          <p className="px-6 py-8 text-sm text-cream/60">
             Create an event before mapping products.
           </p>
         ) : (
-          <div className="divide-y divide-zinc-100">
+          <div className="divide-y divide-cream/5">
             {config.events.map((event) => (
               <div
-                className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-2 px-6 py-5 transition-colors hover:bg-cream/[0.02] sm:flex-row sm:items-center sm:justify-between"
                 key={event.id}
               >
                 <div>
-                  <p className="font-medium text-zinc-950">{event.name}</p>
-                  <p className="mt-1 text-sm text-zinc-600">
+                  <p className="font-medium text-cream">{event.name}</p>
+                  <p className="mt-1 font-mono text-xs text-cream/55">
                     {formatDate(event.startsAt)}
                   </p>
                 </div>
-                <span className="inline-flex w-fit rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-xs font-medium text-zinc-700">
+                <span className={statusBadgeClass(event.status)}>
                   {event.status}
                 </span>
               </div>
@@ -239,6 +235,6 @@ export default async function ConfigPage({
           </div>
         )}
       </section>
-    </main>
+    </Container>
   );
 }

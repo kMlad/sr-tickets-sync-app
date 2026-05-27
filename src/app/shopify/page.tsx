@@ -1,4 +1,11 @@
-import Link from "next/link";
+import Image from "next/image";
+import { ButtonLink } from "@/components/ui/Button";
+import {
+  infoMessageClass,
+  labelClass,
+  successMessageClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { getInstallationByShop } from "@/lib/shopify/installations";
 import { getAllowedShopDomain } from "@/lib/shopify/shop";
 import { getShopifyAuthUrl, hasRequiredScopes } from "@/lib/shopify/utils";
@@ -24,53 +31,63 @@ export default async function ShopifyStatusPage({
     hasRequiredScopes(installation.scope);
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-6 px-4 py-12">
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-          Shopify Connection
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-zinc-950">
-          {isConnected ? "Connected" : "Not connected"}
+    <main className="relative mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-6 px-4 py-12">
+      <div className="gradient-brand-radial pointer-events-none absolute -top-1/3 left-1/2 h-[820px] w-[820px] -translate-x-1/2 opacity-40" />
+      <div className="noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
+      <section className="animate-rise relative rounded-2xl border border-cream/10 bg-ash/60 p-8 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+        <Image
+          alt="Startup Rev"
+          className="mb-6 h-7 w-auto"
+          height={28}
+          priority
+          src="/sr-summit-logo-for-dark.svg"
+          width={140}
+        />
+        <SectionLabel tone="dark">Shopify Connection</SectionLabel>
+        <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-cream">
+          <span className="text-gradient">
+            {isConnected ? "Connected" : "Not connected"}
+          </span>
         </h1>
-        <p className="mt-3 text-sm leading-6 text-zinc-600">
-          Store: <span className="font-medium text-zinc-900">{shop}</span>
+        <p className="mt-3 text-sm leading-6 text-cream/65">
+          Store: <span className="font-mono text-cream">{shop}</span>
         </p>
 
         {params.installed === "1" ? (
-          <p className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <p className={`mt-4 ${successMessageClass}`}>
             Shopify OAuth completed successfully.
           </p>
         ) : null}
 
         {params.connected === "1" ? (
-          <p className="mt-4 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-800">
+          <p className={`mt-4 ${infoMessageClass}`}>
             This store already has an active installation.
           </p>
         ) : null}
 
-        <dl className="mt-6 grid gap-3 text-sm text-zinc-700">
-          <div className="flex justify-between gap-4">
-            <dt>Status</dt>
-            <dd className="font-medium text-zinc-950">
+        <dl className="mt-6 grid gap-3 text-sm">
+          <div className="flex justify-between gap-4 border-b border-cream/5 pb-2">
+            <dt className={labelClass}>Status</dt>
+            <dd className="font-medium text-cream">
               {installation?.status ?? "missing"}
             </dd>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt>Scopes</dt>
-            <dd className="text-right font-medium text-zinc-950">
+          <div className="flex justify-between gap-4 border-b border-cream/5 pb-2">
+            <dt className={labelClass}>Scopes</dt>
+            <dd className="text-right font-mono text-xs text-cream">
               {installation?.scope ?? "none"}
             </dd>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt>Last verified</dt>
-            <dd className="font-medium text-zinc-950">
+          <div className="flex justify-between gap-4 border-b border-cream/5 pb-2">
+            <dt className={labelClass}>Last verified</dt>
+            <dd className="font-mono text-xs text-cream">
               {installation?.lastVerifiedAt ?? "never"}
             </dd>
           </div>
           {installation?.shopName ? (
             <div className="flex justify-between gap-4">
-              <dt>Shop name</dt>
-              <dd className="font-medium text-zinc-950">
+              <dt className={labelClass}>Shop name</dt>
+              <dd className="font-medium text-cream">
                 {installation.shopName}
               </dd>
             </div>
@@ -78,12 +95,12 @@ export default async function ShopifyStatusPage({
         </dl>
 
         {!isConnected ? (
-          <Link
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
+          <ButtonLink
+            className="mt-8"
             href={getShopifyAuthUrl(shop).toString()}
           >
             Install / reconnect app
-          </Link>
+          </ButtonLink>
         ) : null}
       </section>
     </main>

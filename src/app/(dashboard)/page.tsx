@@ -1,3 +1,19 @@
+import { Container } from "@/components/ui/Container";
+import {
+  cardClass,
+  cardHeaderClass,
+  h2Class,
+  statusBadgeClass,
+  subtleTextClass,
+  tableClass,
+  tableTbodyClass,
+  tableTdClass,
+  tableTdMetaClass,
+  tableTdPrimaryClass,
+  tableThClass,
+  tableTheadClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import { getRecentTickets } from "@/lib/tickets/dashboard";
 
 function formatDate(value: string) {
@@ -7,32 +23,23 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-function statusClass(status: string) {
-  if (status === "assigned") {
-    return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  }
-
-  if (status === "cancelled") {
-    return "border-red-200 bg-red-50 text-red-700";
-  }
-
-  return "border-zinc-200 bg-zinc-50 text-zinc-700";
-}
-
 export default function DashboardPage() {
   const ticketsPromise = getRecentTickets();
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
-      <section>
-        <h1 className="text-2xl font-semibold text-zinc-950">Dashboard</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
+    <Container className="flex flex-1 flex-col gap-8 py-10">
+      <section className="animate-rise">
+        <SectionLabel tone="dark">Overview</SectionLabel>
+        <h1 className="mt-4 font-display text-4xl font-semibold tracking-tight text-cream">
+          <span className="text-gradient">Dashboard</span>
+        </h1>
+        <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
           Ticket sync workflow.
         </p>
       </section>
 
       <RecentTickets ticketsPromise={ticketsPromise} />
-    </main>
+    </Container>
   );
 }
 
@@ -44,58 +51,58 @@ async function RecentTickets({
   const tickets = await ticketsPromise;
 
   return (
-    <section className="rounded-lg border border-zinc-200 bg-white shadow-sm">
-      <div className="border-b border-zinc-200 px-5 py-4">
-        <h2 className="text-base font-semibold text-zinc-950">
-          Recent tickets
-        </h2>
+    <section className={cardClass}>
+      <div className={cardHeaderClass}>
+        <h2 className={h2Class}>Recent tickets</h2>
       </div>
 
       {tickets.length === 0 ? (
-        <p className="px-5 py-6 text-sm text-zinc-600">
+        <p className="px-6 py-8 text-sm text-cream/60">
           No ticket instances have been synced yet.
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[860px] text-left text-sm">
-            <thead className="border-b border-zinc-200 text-xs uppercase text-zinc-500">
+          <table className={tableClass}>
+            <thead className={tableTheadClass}>
               <tr>
-                <th className="px-5 py-3 font-semibold">Ticket</th>
-                <th className="px-5 py-3 font-semibold">Event</th>
-                <th className="px-5 py-3 font-semibold">Order</th>
-                <th className="px-5 py-3 font-semibold">Status</th>
-                <th className="px-5 py-3 font-semibold">Claim link</th>
-                <th className="px-5 py-3 font-semibold">Created</th>
+                <th className={tableThClass}>Ticket</th>
+                <th className={tableThClass}>Event</th>
+                <th className={tableThClass}>Order</th>
+                <th className={tableThClass}>Status</th>
+                <th className={tableThClass}>Claim link</th>
+                <th className={`${tableThClass} text-right`}>Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-100">
+            <tbody className={tableTbodyClass}>
               {tickets.map((ticket) => (
-                <tr key={ticket.id}>
-                  <td className="px-5 py-4 font-medium text-zinc-950">
+                <tr
+                  className="transition-colors hover:bg-cream/[0.02]"
+                  key={ticket.id}
+                >
+                  <td className={tableTdPrimaryClass}>
                     {ticket.productTitle ?? "Ticket"}
                   </td>
-                  <td className="px-5 py-4 text-zinc-700">
+                  <td className={tableTdClass}>
                     {ticket.eventName ?? "Unmapped event"}
                   </td>
-                  <td className="px-5 py-4 text-zinc-700">
+                  <td className={tableTdClass}>
                     {ticket.orderName ?? "Order"}
                   </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`inline-flex rounded-md border px-2 py-1 text-xs font-medium ${statusClass(ticket.status)}`}
-                    >
+                  <td className="px-6 py-4 align-middle">
+                    <span className={statusBadgeClass(ticket.status)}>
                       {ticket.status}
                     </span>
                   </td>
-                  <td className="max-w-xs px-5 py-4">
+                  <td className="max-w-[22rem] px-6 py-4 align-middle">
                     <a
-                      className="block truncate font-medium text-zinc-950 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-950"
+                      className="block truncate font-mono text-xs text-cream/70 underline decoration-cream/15 underline-offset-4 transition-colors hover:decoration-orange hover:text-orange"
                       href={ticket.claimUrl}
+                      title={ticket.claimUrl}
                     >
                       {ticket.claimUrl}
                     </a>
                   </td>
-                  <td className="px-5 py-4 text-zinc-600">
+                  <td className={`${tableTdMetaClass} text-right`}>
                     {formatDate(ticket.createdAt)}
                   </td>
                 </tr>

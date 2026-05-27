@@ -1,4 +1,13 @@
+import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import {
+  errorMessageClass,
+  inputClass,
+  labelClass,
+  successMessageClass,
+} from "@/components/ui/classes";
+import { SectionLabel } from "@/components/ui/SectionLabel";
 import {
   claimTicket,
   claimTicketInputSchema,
@@ -78,25 +87,37 @@ export default async function ClaimTicketPage({
   const isAssigned = claimDetails.ticket.status === "assigned";
 
   return (
-    <main className="flex min-h-screen bg-zinc-100 px-4 py-10 text-zinc-950">
-      <section className="mx-auto flex w-full max-w-xl flex-col gap-6">
-        <div>
-          <p className="text-sm font-medium text-zinc-500">Startup Rev</p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal">
-            Ticket assignment
+    <main className="relative flex min-h-screen items-start justify-center overflow-hidden bg-void px-4 py-12 text-cream">
+      <div className="gradient-brand-radial pointer-events-none absolute -top-1/3 left-1/2 h-[820px] w-[820px] -translate-x-1/2 opacity-50" />
+      <div className="noise pointer-events-none absolute inset-0 opacity-[0.06] mix-blend-overlay" />
+      <section className="animate-rise relative mx-auto flex w-full max-w-xl flex-col gap-8">
+        <div className="flex flex-col items-center text-center">
+          <Image
+            alt="Startup Rev"
+            className="mb-6 h-8 w-auto"
+            height={32}
+            priority
+            src="/sr-summit-logo-for-dark.svg"
+            width={160}
+          />
+          <SectionLabel tone="dark">Ticket Assignment</SectionLabel>
+          <h1 className="mt-4 font-display text-3xl font-semibold tracking-tight text-cream sm:text-4xl">
+            <span className="text-gradient">Claim your seat</span>
           </h1>
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="border-b border-zinc-200 pb-5">
-            <p className="text-sm font-medium text-zinc-500">Event</p>
-            <h2 className="mt-1 text-xl font-semibold">
+        <div className="rounded-2xl border border-cream/10 bg-ash/60 p-6 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] backdrop-blur-xl">
+          <div className="border-b border-cream/10 pb-5">
+            <p className={labelClass}>Event</p>
+            <h2 className="mt-2 font-display text-xl font-semibold text-cream">
               {claimDetails.event?.name ?? "Event ticket"}
             </h2>
             {eventDate ? (
-              <p className="mt-2 text-sm text-zinc-600">{eventDate}</p>
+              <p className="mt-2 font-mono text-xs text-cream/65">
+                {eventDate}
+              </p>
             ) : null}
-            <p className="mt-4 text-sm text-zinc-600">
+            <p className="mt-4 text-sm text-cream/70">
               {claimDetails.ticket.productTitle ?? "Ticket"}
               {claimDetails.order?.name ? ` · ${claimDetails.order.name}` : ""}
             </p>
@@ -104,38 +125,34 @@ export default async function ClaimTicketPage({
 
           {isAssigned ? (
             <div className="pt-5">
-              <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
-                Ticket assigned
-              </p>
+              <p className={successMessageClass}>Ticket assigned</p>
               {claimDetails.attendee ? (
-                <div className="mt-5 grid gap-3 text-sm">
+                <div className="mt-5 grid gap-4 text-sm">
                   <div>
-                    <p className="font-medium text-zinc-500">Attendee</p>
-                    <p className="mt-1 text-zinc-950">
+                    <p className={labelClass}>Attendee</p>
+                    <p className="mt-1 text-cream">
                       {claimDetails.attendee.name}
                     </p>
                   </div>
                   {claimDetails.attendee.affiliation ? (
                     <div>
-                      <p className="font-medium text-zinc-500">Company</p>
-                      <p className="mt-1 text-zinc-950">
+                      <p className={labelClass}>Company</p>
+                      <p className="mt-1 text-cream">
                         {claimDetails.attendee.affiliation}
                       </p>
                     </div>
                   ) : null}
                   {claimDetails.attendee.title ? (
                     <div>
-                      <p className="font-medium text-zinc-500">
-                        Position at company
-                      </p>
-                      <p className="mt-1 text-zinc-950">
+                      <p className={labelClass}>Position at company</p>
+                      <p className="mt-1 text-cream">
                         {claimDetails.attendee.title}
                       </p>
                     </div>
                   ) : null}
                   <div>
-                    <p className="font-medium text-zinc-500">Email</p>
-                    <p className="mt-1 text-zinc-950">
+                    <p className={labelClass}>Email</p>
+                    <p className="mt-1 text-cream">
                       {claimDetails.attendee.email}
                     </p>
                   </div>
@@ -144,29 +161,25 @@ export default async function ClaimTicketPage({
             </div>
           ) : (
             <form action={submitClaim} className="flex flex-col gap-4 pt-5">
-              {message ? (
-                <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {message}
-                </p>
-              ) : null}
+              {message ? <p className={errorMessageClass}>{message}</p> : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                  First name
+                <label className="flex flex-col gap-2">
+                  <span className={labelClass}>First name</span>
                   <input
                     autoComplete="given-name"
-                    className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                    className={inputClass}
                     name="firstName"
                     required
                     type="text"
                   />
                 </label>
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                  Last name
+                <label className="flex flex-col gap-2">
+                  <span className={labelClass}>Last name</span>
                   <input
                     autoComplete="family-name"
-                    className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                    className={inputClass}
                     name="lastName"
                     required
                     type="text"
@@ -174,45 +187,42 @@ export default async function ClaimTicketPage({
                 </label>
               </div>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                Email
+              <label className="flex flex-col gap-2">
+                <span className={labelClass}>Email</span>
                 <input
                   autoComplete="email"
-                  className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                  className={inputClass}
                   name="email"
                   required
                   type="email"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                Company
+              <label className="flex flex-col gap-2">
+                <span className={labelClass}>Company</span>
                 <input
                   autoComplete="organization"
-                  className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                  className={inputClass}
                   name="affiliation"
                   required
                   type="text"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                Position at company
+              <label className="flex flex-col gap-2">
+                <span className={labelClass}>Position at company</span>
                 <input
                   autoComplete="organization-title"
-                  className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                  className={inputClass}
                   name="title"
                   required
                   type="text"
                 />
               </label>
 
-              <button
-                className="mt-2 h-11 rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition hover:bg-zinc-800"
-                type="submit"
-              >
+              <Button className="mt-2 w-full" size="lg" type="submit">
                 Assign ticket
-              </button>
+              </Button>
             </form>
           )}
         </div>
