@@ -17,7 +17,11 @@ export type TicketClaimDetails = {
   } | null;
   attendee: {
     name: string;
+    firstName: string | null;
+    lastName: string | null;
     email: string;
+    affiliation: string | null;
+    title: string | null;
     claimedAt: string;
   } | null;
   order: {
@@ -26,11 +30,13 @@ export type TicketClaimDetails = {
 };
 
 export const claimTicketInputSchema = z.object({
-  name: z.string().trim().min(1, "Name is required.").max(120),
+  firstName: z.string().trim().min(1, "First name is required.").max(80),
+  lastName: z.string().trim().min(1, "Last name is required.").max(80),
   email: z
     .email("Enter a valid email address.")
     .transform((value) => value.trim().toLowerCase()),
-  phone: z.string().trim().max(40).optional(),
+  affiliation: z.string().trim().min(1, "Company is required.").max(160),
+  title: z.string().trim().min(1, "Position is required.").max(160),
 });
 
 export function getTicketClaimUrl(claimToken: string) {
@@ -77,7 +83,7 @@ export async function getTicketClaimDetails(
       .maybeSingle(),
     supabase
       .from("attendees")
-      .select("name,email,claimed_at")
+      .select("name,first_name,last_name,email,affiliation,title,claimed_at")
       .eq("ticket_id", record.id)
       .maybeSingle(),
     supabase
@@ -115,7 +121,13 @@ export async function getTicketClaimDetails(
     attendee: attendee
       ? {
           name: String(attendee.name),
+          firstName: attendee.first_name ? String(attendee.first_name) : null,
+          lastName: attendee.last_name ? String(attendee.last_name) : null,
           email: String(attendee.email),
+          affiliation: attendee.affiliation
+            ? String(attendee.affiliation)
+            : null,
+          title: attendee.title ? String(attendee.title) : null,
           claimedAt: String(attendee.claimed_at),
         }
       : null,
@@ -136,9 +148,11 @@ export async function claimTicket(
   const supabase = createAdminClient();
   const { data, error } = await supabase.rpc("claim_ticket", {
     p_claim_token: claimToken,
-    p_name: input.name,
+    p_first_name: input.firstName,
+    p_last_name: input.lastName,
     p_email: input.email,
-    p_phone: input.phone ?? null,
+    p_affiliation: input.affiliation,
+    p_title: input.title,
     p_metadata: {},
   });
 

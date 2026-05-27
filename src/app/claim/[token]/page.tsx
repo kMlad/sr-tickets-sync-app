@@ -28,7 +28,7 @@ function errorMessage(error: string | undefined) {
   }
 
   if (error === "invalid") {
-    return "Enter your name and a valid email address.";
+    return "Enter the required attendee details and a valid email address.";
   }
 
   return null;
@@ -55,9 +55,11 @@ export default async function ClaimTicketPage({
     "use server";
 
     const parsed = claimTicketInputSchema.safeParse({
-      name: formData.get("name"),
+      firstName: formData.get("firstName"),
+      lastName: formData.get("lastName"),
       email: formData.get("email"),
-      phone: formData.get("phone") || undefined,
+      affiliation: formData.get("affiliation"),
+      title: formData.get("title"),
     });
 
     if (!parsed.success) {
@@ -113,6 +115,24 @@ export default async function ClaimTicketPage({
                       {claimDetails.attendee.name}
                     </p>
                   </div>
+                  {claimDetails.attendee.affiliation ? (
+                    <div>
+                      <p className="font-medium text-zinc-500">Company</p>
+                      <p className="mt-1 text-zinc-950">
+                        {claimDetails.attendee.affiliation}
+                      </p>
+                    </div>
+                  ) : null}
+                  {claimDetails.attendee.title ? (
+                    <div>
+                      <p className="font-medium text-zinc-500">
+                        Position at company
+                      </p>
+                      <p className="mt-1 text-zinc-950">
+                        {claimDetails.attendee.title}
+                      </p>
+                    </div>
+                  ) : null}
                   <div>
                     <p className="font-medium text-zinc-500">Email</p>
                     <p className="mt-1 text-zinc-950">
@@ -130,19 +150,34 @@ export default async function ClaimTicketPage({
                 </p>
               ) : null}
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                Full name
-                <input
-                  className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
-                  name="name"
-                  required
-                  type="text"
-                />
-              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
+                  First name
+                  <input
+                    autoComplete="given-name"
+                    className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                    name="firstName"
+                    required
+                    type="text"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
+                  Last name
+                  <input
+                    autoComplete="family-name"
+                    className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                    name="lastName"
+                    required
+                    type="text"
+                  />
+                </label>
+              </div>
 
               <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
                 Email
                 <input
+                  autoComplete="email"
                   className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
                   name="email"
                   required
@@ -151,11 +186,24 @@ export default async function ClaimTicketPage({
               </label>
 
               <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
-                Phone
+                Company
                 <input
+                  autoComplete="organization"
                   className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
-                  name="phone"
-                  type="tel"
+                  name="affiliation"
+                  required
+                  type="text"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-sm font-medium text-zinc-700">
+                Position at company
+                <input
+                  autoComplete="organization-title"
+                  className="h-11 rounded-md border border-zinc-300 bg-white px-3 text-base text-zinc-950 outline-none transition focus:border-zinc-950 focus:ring-2 focus:ring-zinc-200"
+                  name="title"
+                  required
+                  type="text"
                 />
               </label>
 

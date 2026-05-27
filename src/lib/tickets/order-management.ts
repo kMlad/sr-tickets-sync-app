@@ -47,7 +47,11 @@ type EventRow = {
 type AttendeeRow = {
   ticket_id: string;
   name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string;
+  affiliation: string | null;
+  title: string | null;
   claimed_at: string;
 };
 
@@ -73,7 +77,11 @@ export type ManagedOrderDetails = {
     } | null;
     attendee: {
       name: string;
+      firstName: string | null;
+      lastName: string | null;
       email: string;
+      affiliation: string | null;
+      title: string | null;
       claimedAt: string;
     } | null;
   }[];
@@ -157,7 +165,9 @@ export async function getManagedOrderDetails(
     ticketIds.length
       ? supabase
           .from("attendees")
-          .select("ticket_id,name,email,claimed_at")
+          .select(
+            "ticket_id,name,first_name,last_name,email,affiliation,title,claimed_at",
+          )
           .in("ticket_id", ticketIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
@@ -210,7 +220,11 @@ export async function getManagedOrderDetails(
         attendee: attendee
           ? {
               name: attendee.name,
+              firstName: attendee.first_name,
+              lastName: attendee.last_name,
               email: attendee.email,
+              affiliation: attendee.affiliation,
+              title: attendee.title,
               claimedAt: attendee.claimed_at,
             }
           : null,

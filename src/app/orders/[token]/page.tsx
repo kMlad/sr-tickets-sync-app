@@ -154,8 +154,17 @@ export default async function ManageOrderTicketsPage({
 
                   {ticket.attendee ? (
                     <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                      Assigned to {ticket.attendee.name}{" "}
-                      <span>({ticket.attendee.email})</span>
+                      <p>
+                        Assigned to {ticket.attendee.name}{" "}
+                        <span>({ticket.attendee.email})</span>
+                      </p>
+                      {ticket.attendee.title || ticket.attendee.affiliation ? (
+                        <p className="mt-1 text-emerald-700">
+                          {[ticket.attendee.title, ticket.attendee.affiliation]
+                            .filter(Boolean)
+                            .join(" at ")}
+                        </p>
+                      ) : null}
                     </div>
                   ) : canInvite ? (
                     <form

@@ -77,7 +77,7 @@ create table public.shopify_orders (
   shopify_order_name text,
   order_number text,
   buyer_id uuid references public.buyers (id) on delete set null,
-  manage_token text not null default encode(gen_random_bytes(32), 'hex') unique,
+  manage_token text not null default encode(gen_random_bytes(32), 'hex'),
   buyer_notification_sent_at timestamptz,
   currency_code text,
   total_price numeric,
@@ -123,8 +123,14 @@ create table public.attendees (
   order_id uuid not null references public.shopify_orders (id) on delete cascade,
   buyer_id uuid references public.buyers (id) on delete set null,
   name text not null,
+  first_name text,
+  last_name text,
   email text not null,
   phone text,
+  attendee_type text not null default 'attendee' check (attendee_type in ('attendee')),
+  affiliation text,
+  title text,
+  badge_type text,
   metadata jsonb not null default '{}'::jsonb,
   claimed_at timestamptz not null default now(),
   created_at timestamptz not null default now()
@@ -141,6 +147,9 @@ create index buyers_shop_email_idx
 
 create index shopify_orders_shop_ordered_at_idx
   on public.shopify_orders (shop, ordered_at);
+
+create unique index shopify_orders_manage_token_key
+  on public.shopify_orders (manage_token);
 
 create index ticket_instances_event_status_idx
   on public.ticket_instances (event_id, status);
@@ -180,9 +189,11 @@ execute function public.set_updated_at();
 
 create or replace function public.claim_ticket(
   p_claim_token text,
-  p_name text,
+  p_first_name text,
+  p_last_name text,
   p_email text,
-  p_phone text default null,
+  p_affiliation text,
+  p_title text,
   p_metadata jsonb default '{}'::jsonb
 )
 returns uuid
@@ -213,8 +224,13 @@ begin
     order_id,
     buyer_id,
     name,
+    first_name,
+    last_name,
     email,
-    phone,
+    attendee_type,
+    affiliation,
+    title,
+    badge_type,
     metadata
   )
   values (
@@ -223,9 +239,14 @@ begin
     v_ticket.event_id,
     v_ticket.order_id,
     v_ticket.buyer_id,
-    trim(p_name),
+    concat_ws(' ', trim(p_first_name), trim(p_last_name)),
+    trim(p_first_name),
+    trim(p_last_name),
     lower(trim(p_email)),
-    nullif(trim(coalesce(p_phone, '')), ''),
+    'attendee',
+    trim(p_affiliation),
+    trim(p_title),
+    v_ticket.product_title,
     coalesce(p_metadata, '{}'::jsonb)
   )
   returning id into v_attendee_id;

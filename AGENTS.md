@@ -12,3 +12,7 @@ Use the repo-local opensrc CLI when you need third-party package source, not jus
 pnpm --silent opensrc path <package>
 rg "pattern" $(pnpm --silent opensrc path <package>)
 ```
+
+## Database schema workflow
+
+When changing the Supabase database schema, update the declarative schema files in `supabase/schemas/` first. Generate migrations afterwards with the Supabase diff workflow instead of hand-writing migration files unless the user explicitly asks for a manual migration.
