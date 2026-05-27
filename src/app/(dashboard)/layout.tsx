@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { verifyAdminSession } from "@/lib/auth";
 import { logout } from "./actions";
 
@@ -21,6 +22,20 @@ export default async function DashboardLayout({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <nav className="hidden items-center gap-2 sm:flex">
+              <Link
+                className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                href="/"
+              >
+                Dashboard
+              </Link>
+              <Link
+                className="rounded-md px-3 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100"
+                href="/config"
+              >
+                Config
+              </Link>
+            </nav>
             <p className="hidden text-sm text-zinc-600 sm:block">
               {session.email}
             </p>

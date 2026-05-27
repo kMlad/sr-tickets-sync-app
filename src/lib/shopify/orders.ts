@@ -1,16 +1,23 @@
 import "server-only";
 
+import { syncTicketsFromShopifyOrder } from "@/lib/tickets/order-sync";
+
 export async function queueOrderWebhookProcessing(args: {
   shop: string;
   topic: string;
   body: string;
   webhookId: string;
 }) {
-  // Placeholder for durable order processing. The webhook route acknowledges fast
-  // and this function will evolve into queue/worker-backed sync logic.
+  const result = await syncTicketsFromShopifyOrder({
+    shop: args.shop,
+    body: args.body,
+  });
+
   console.info("Received Shopify order webhook", {
     shop: args.shop,
     topic: args.topic,
     webhookId: args.webhookId,
+    orderSynced: result.orderSynced,
+    ticketsCreated: result.ticketsCreated,
   });
 }
