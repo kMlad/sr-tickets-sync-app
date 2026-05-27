@@ -1,7 +1,9 @@
 import "server-only";
 
 import { randomBytes } from "node:crypto";
+import { sendBuyerTicketManagementEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTicketManageUrl } from "@/lib/tickets/order-management";
 
 type ShopifyOrderPayload = {
   id?: number | string;
@@ -41,6 +43,20 @@ type ProductMapping = {
   shopify_product_id: string;
 };
 
+type SyncedOrder = {
+  id: string;
+  manageToken: string;
+  buyerNotificationSentAt: string | null;
+  orderName: string | null;
+};
+
+type SyncedOrderRow = {
+  id: string;
+  manage_token: string;
+  buyer_notification_sent_at: string | null;
+  shopify_order_name: string | null;
+};
+
 function asText(value: unknown) {
   if (typeof value === "string" && value.trim()) {
     return value.trim();
@@ -69,6 +85,36 @@ function asPositiveInteger(value: unknown) {
 
 function generateClaimToken() {
   return randomBytes(32).toString("base64url");
+}
+
+function generateManageToken() {
+  return randomBytes(32).toString("base64url");
+}
+
+function getBuyerEmail(order: ShopifyOrderPayload) {
+  return asNullableText(
+    order.customer?.email ?? order.contact_email ?? order.email,
+  )?.toLowerCase();
+}
+
+function getBuyerName(order: ShopifyOrderPayload) {
+  const name = [order.customer?.first_name, order.customer?.last_name]
+    .map((value) => asNullableText(value))
+    .filter(Boolean)
+    .join(" ");
+
+  return name || null;
+}
+
+function toSyncedOrder(row: SyncedOrderRow): SyncedOrder {
+  return {
+    id: String(row.id),
+    manageToken: String(row.manage_token),
+    buyerNotificationSentAt: row.buyer_notification_sent_at
+      ? String(row.buyer_notification_sent_at)
+      : null,
+    orderName: row.shopify_order_name ? String(row.shopify_order_name) : null,
+  };
 }
 
 async function upsertBuyer(shop: string, order: ShopifyOrderPayload) {
@@ -148,7 +194,7 @@ async function upsertOrder(
   shop: string,
   buyerId: string | null,
   order: ShopifyOrderPayload,
-) {
+): Promise<SyncedOrder> {
   const supabase = createAdminClient();
   const shopifyOrderId = asText(order.id ?? order.admin_graphql_api_id);
 
@@ -156,31 +202,63 @@ async function upsertOrder(
     throw new Error("Shopify order payload is missing an order id.");
   }
 
+  const payload = {
+    shop,
+    shopify_order_id: shopifyOrderId,
+    shopify_order_name: asNullableText(order.name),
+    order_number: asNullableText(order.order_number),
+    buyer_id: buyerId,
+    currency_code: asNullableText(order.currency_code ?? order.currency),
+    total_price: order.total_price ?? null,
+    ordered_at: asNullableText(order.created_at),
+    source_payload: order,
+    processed_at: new Date().toISOString(),
+  };
+
+  const { data: existing, error: lookupError } = await supabase
+    .from("shopify_orders")
+    .select("id,manage_token,buyer_notification_sent_at,shopify_order_name")
+    .eq("shop", shop)
+    .eq("shopify_order_id", shopifyOrderId)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw new Error(`Failed to load Shopify order: ${lookupError.message}`);
+  }
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("shopify_orders")
+      .update(payload)
+      .eq("id", existing.id)
+      .select("id,manage_token,buyer_notification_sent_at,shopify_order_name")
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update Shopify order: ${error.message}`);
+    }
+
+    return toSyncedOrder(data as SyncedOrderRow);
+  }
+
   const { data, error } = await supabase
     .from("shopify_orders")
-    .upsert(
-      {
-        shop,
-        shopify_order_id: shopifyOrderId,
-        shopify_order_name: asNullableText(order.name),
-        order_number: asNullableText(order.order_number),
-        buyer_id: buyerId,
-        currency_code: asNullableText(order.currency_code ?? order.currency),
-        total_price: order.total_price ?? null,
-        ordered_at: asNullableText(order.created_at),
-        source_payload: order,
-        processed_at: new Date().toISOString(),
-      },
-      { onConflict: "shop,shopify_order_id" },
-    )
-    .select("id")
+    .insert({
+      ...payload,
+      manage_token: generateManageToken(),
+    })
+    .select("id,manage_token,buyer_notification_sent_at,shopify_order_name")
     .single();
 
   if (error) {
-    throw new Error(`Failed to upsert Shopify order: ${error.message}`);
+    if (error.code === "23505") {
+      return upsertOrder(shop, buyerId, order);
+    }
+
+    throw new Error(`Failed to create Shopify order: ${error.message}`);
   }
 
-  return String(data.id);
+  return toSyncedOrder(data as SyncedOrderRow);
 }
 
 async function loadProductMappings(shop: string, productIds: string[]) {
@@ -231,7 +309,7 @@ export async function syncTicketsFromShopifyOrder(args: {
   }
 
   const buyerId = await upsertBuyer(args.shop, order);
-  const orderId = await upsertOrder(args.shop, buyerId, order);
+  const syncedOrder = await upsertOrder(args.shop, buyerId, order);
   const currencyCode = asNullableText(order.currency_code ?? order.currency);
   const rows = ticketLineItems.flatMap((lineItem) => {
     const productId = asText(lineItem.product_id);
@@ -246,7 +324,7 @@ export async function syncTicketsFromShopifyOrder(args: {
     return Array.from({ length: quantity }, (_, index) => ({
       shop: args.shop,
       event_id: mapping.event_id,
-      order_id: orderId,
+      order_id: syncedOrder.id,
       buyer_id: buyerId,
       shopify_product_id: productId,
       shopify_line_item_id: lineItemId,
@@ -275,5 +353,52 @@ export async function syncTicketsFromShopifyOrder(args: {
     throw new Error(`Failed to create ticket instances: ${error.message}`);
   }
 
+  await sendBuyerNotificationIfNeeded({
+    order: syncedOrder,
+    buyerEmail: getBuyerEmail(order),
+    buyerName: getBuyerName(order),
+    ticketCount: rows.length,
+  });
+
   return { ticketsCreated: data?.length ?? 0, orderSynced: true };
+}
+
+async function sendBuyerNotificationIfNeeded(args: {
+  order: SyncedOrder;
+  buyerEmail: string | null | undefined;
+  buyerName: string | null;
+  ticketCount: number;
+}) {
+  if (!args.buyerEmail || args.order.buyerNotificationSentAt) {
+    return;
+  }
+
+  try {
+    await sendBuyerTicketManagementEmail({
+      to: args.buyerEmail,
+      buyerName: args.buyerName,
+      orderName: args.order.orderName,
+      manageUrl: getTicketManageUrl(args.order.manageToken),
+      ticketCount: args.ticketCount,
+      idempotencyKey: `buyer-ticket-management-${args.order.id}`,
+    });
+  } catch (error) {
+    console.error("Failed to send buyer ticket management email", {
+      orderId: args.order.id,
+      error,
+    });
+    return;
+  }
+
+  const { error } = await createAdminClient()
+    .from("shopify_orders")
+    .update({ buyer_notification_sent_at: new Date().toISOString() })
+    .eq("id", args.order.id);
+
+  if (error) {
+    console.error("Failed to mark buyer ticket email as sent", {
+      orderId: args.order.id,
+      error,
+    });
+  }
 }

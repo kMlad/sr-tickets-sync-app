@@ -1,6 +1,15 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+const optionalNonEmptyString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}, z.string().min(1).optional());
+
 export const env = createEnv({
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
   client: {
@@ -40,6 +49,8 @@ export const env = createEnv({
       .describe(
         "Base64-encoded 32-byte key used to encrypt Shopify tokens at rest.",
       ),
+    RESEND_API_KEY: optionalNonEmptyString,
+    RESEND_FROM_EMAIL: optionalNonEmptyString,
   },
   experimental__runtimeEnv: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
