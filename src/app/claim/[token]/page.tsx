@@ -1,6 +1,7 @@
 import Image from "next/image";
-import { notFound, redirect } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { notFound } from "next/navigation";
+import { submitClaim } from "@/app/claim/[token]/actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import {
   errorMessageClass,
   inputClass,
@@ -8,11 +9,7 @@ import {
   successMessageClass,
 } from "@/components/ui/classes";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import {
-  claimTicket,
-  claimTicketInputSchema,
-  getTicketClaimDetails,
-} from "@/lib/tickets/claims";
+import { getTicketClaimDetails } from "@/lib/tickets/claims";
 
 export const dynamic = "force-dynamic";
 
@@ -59,31 +56,6 @@ export default async function ClaimTicketPage({
 
   const message = errorMessage(singleValue(query.error));
   const eventDate = formatEventDate(claimDetails.event?.startsAt ?? null);
-
-  async function submitClaim(formData: FormData) {
-    "use server";
-
-    const parsed = claimTicketInputSchema.safeParse({
-      firstName: formData.get("firstName"),
-      lastName: formData.get("lastName"),
-      email: formData.get("email"),
-      affiliation: formData.get("affiliation"),
-      title: formData.get("title"),
-    });
-
-    if (!parsed.success) {
-      redirect(`/claim/${encodeURIComponent(token)}?error=invalid`);
-    }
-
-    const result = await claimTicket(token, parsed.data);
-
-    if ("error" in result) {
-      redirect(`/claim/${encodeURIComponent(token)}?error=${result.error}`);
-    }
-
-    redirect(`/claim/${encodeURIComponent(token)}?claimed=1`);
-  }
-
   const isAssigned = claimDetails.ticket.status === "assigned";
 
   return (
@@ -161,6 +133,7 @@ export default async function ClaimTicketPage({
             </div>
           ) : (
             <form action={submitClaim} className="flex flex-col gap-4 pt-5">
+              <input name="token" type="hidden" value={token} />
               {message ? <p className={errorMessageClass}>{message}</p> : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -220,9 +193,9 @@ export default async function ClaimTicketPage({
                 />
               </label>
 
-              <Button className="mt-2 w-full" size="lg" type="submit">
+              <SubmitButton className="mt-2 w-full" size="lg">
                 Assign ticket
-              </Button>
+              </SubmitButton>
             </form>
           )}
         </div>

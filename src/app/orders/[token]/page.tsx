@@ -1,6 +1,7 @@
 import Image from "next/image";
-import { notFound, redirect } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { notFound } from "next/navigation";
+import { sendInvite } from "@/app/orders/[token]/actions";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import {
   errorMessageClass,
   inputClass,
@@ -9,11 +10,7 @@ import {
   successMessageClass,
 } from "@/components/ui/classes";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import {
-  getManagedOrderDetails,
-  sendTicketInvite,
-  sendTicketInviteInputSchema,
-} from "@/lib/tickets/order-management";
+import { getManagedOrderDetails } from "@/lib/tickets/order-management";
 
 export const dynamic = "force-dynamic";
 
@@ -64,36 +61,6 @@ export default async function ManageOrderTicketsPage({
 
   const message = pageMessage(singleValue(query.error));
   const sentTicketId = singleValue(query.sent);
-
-  async function sendInvite(formData: FormData) {
-    "use server";
-
-    const parsed = sendTicketInviteInputSchema.safeParse({
-      ticketId: formData.get("ticketId"),
-      email: formData.get("email"),
-    });
-
-    if (!parsed.success) {
-      redirect(`/orders/${encodeURIComponent(token)}?error=invalid`);
-    }
-
-    let result: Awaited<ReturnType<typeof sendTicketInvite>>;
-
-    try {
-      result = await sendTicketInvite(token, parsed.data);
-    } catch (error) {
-      console.error("Failed to send ticket invite", { error });
-      redirect(`/orders/${encodeURIComponent(token)}?error=email_failed`);
-    }
-
-    if ("error" in result) {
-      redirect(`/orders/${encodeURIComponent(token)}?error=${result.error}`);
-    }
-
-    redirect(
-      `/orders/${encodeURIComponent(token)}?sent=${encodeURIComponent(parsed.data.ticketId)}`,
-    );
-  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-void px-4 py-12 text-cream">
@@ -173,6 +140,7 @@ export default async function ManageOrderTicketsPage({
                       action={sendInvite}
                       className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
                     >
+                      <input name="token" type="hidden" value={token} />
                       <input name="ticketId" type="hidden" value={ticket.id} />
                       <label className="flex flex-col gap-2">
                         <span className={labelClass}>Attendee email</span>
@@ -184,7 +152,7 @@ export default async function ManageOrderTicketsPage({
                           type="email"
                         />
                       </label>
-                      <Button type="submit">Send link</Button>
+                      <SubmitButton>Send link</SubmitButton>
                     </form>
                   ) : (
                     <p className="rounded-md border border-cream/10 bg-cream/[0.04] px-3 py-2 text-sm text-cream/60">

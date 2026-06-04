@@ -40,7 +40,14 @@ export function SubmitButton({
 
   return (
     <Button disabled={disabled || pending} type="submit" {...rest}>
-      {pending ? <Spinner /> : children}
+      {/* Keep the label in flow (invisible) so the button keeps its width,
+          and overlay the spinner centered on top. */}
+      <span className={pending ? "invisible" : undefined}>{children}</span>
+      {pending ? (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <Spinner />
+        </span>
+      ) : null}
     </Button>
   );
 }
