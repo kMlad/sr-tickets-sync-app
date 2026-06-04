@@ -3,7 +3,6 @@ import {
   deleteTicketProductMapping,
   saveTicketProductMapping,
 } from "@/app/(dashboard)/config/actions";
-import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import {
   cardClass,
@@ -24,6 +23,7 @@ import {
   tableTheadClass,
 } from "@/components/ui/classes";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getTicketConfig } from "@/lib/tickets/config";
 
 function singleValue(value: string | string[] | undefined) {
@@ -99,7 +99,7 @@ export default async function ConfigPage({
               />
             </label>
 
-            <Button type="submit">Create event</Button>
+            <SubmitButton>Create event</SubmitButton>
           </form>
         </section>
 
@@ -143,9 +143,9 @@ export default async function ConfigPage({
               <input className={inputClass} name="productTitle" type="text" />
             </label>
 
-            <Button disabled={config.events.length === 0} type="submit">
+            <SubmitButton disabled={config.events.length === 0}>
               Save mapping
-            </Button>
+            </SubmitButton>
           </form>
         </section>
       </div>
@@ -192,9 +192,9 @@ export default async function ConfigPage({
                           type="hidden"
                           value={mapping.id}
                         />
-                        <Button size="sm" type="submit" variant="secondary">
+                        <SubmitButton size="sm" variant="secondary">
                           Remove
-                        </Button>
+                        </SubmitButton>
                       </form>
                     </td>
                   </tr>
