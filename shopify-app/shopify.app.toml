@@ -2,7 +2,7 @@
 
 client_id = "34643a36e680b5ac9c6075c5d793596f"
 name = "sr-tickets-sync-app"
-application_url = "https://example.com"
+application_url = "https://tickets.startuprevolution.ai"
 embedded = false
 
 [access_scopes]
@@ -25,9 +25,8 @@ api_version = "2026-01"
 
 [auth]
 redirect_urls = [
-  "https://example.com/api/shopify/auth/callback",
+  "https://tickets.startuprevolution.ai/api/shopify/auth/callback",
 ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = false
