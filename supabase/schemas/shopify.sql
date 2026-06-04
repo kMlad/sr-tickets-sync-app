@@ -77,7 +77,7 @@ create table public.shopify_orders (
   shopify_order_name text,
   order_number text,
   buyer_id uuid references public.buyers (id) on delete set null,
-  manage_token text not null default encode(gen_random_bytes(32), 'hex'),
+  manage_token text not null default encode(extensions.gen_random_bytes(32), 'hex'),
   buyer_notification_sent_at timestamptz,
   currency_code text,
   total_price numeric,
@@ -259,3 +259,17 @@ begin
   return v_attendee_id;
 end;
 $$;
+
+grant usage on schema public to service_role;
+grant all privileges on all tables in schema public to service_role;
+grant all privileges on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
+alter default privileges in schema public
+grant all privileges on tables to service_role;
+
+alter default privileges in schema public
+grant all privileges on sequences to service_role;
+
+alter default privileges in schema public
+grant execute on functions to service_role;
