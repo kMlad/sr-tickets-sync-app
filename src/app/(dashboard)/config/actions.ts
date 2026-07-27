@@ -22,6 +22,19 @@ const deleteMappingSchema = z.object({
   mappingId: z.uuid(),
 });
 
+const setCurrentEventSchema = z.object({
+  eventId: z.uuid(),
+});
+
+const passTypeSchema = z.object({
+  eventId: z.uuid(),
+  name: z.string().trim().min(1).max(160),
+});
+
+const deletePassTypeSchema = z.object({
+  passTypeId: z.uuid(),
+});
+
 function optionalTimestamp(value: string | undefined) {
   if (!value) {
     return null;
@@ -98,6 +111,92 @@ export async function saveTicketProductMapping(formData: FormData) {
 
   revalidatePath("/config");
   configRedirect("mapping-saved");
+}
+
+export async function setCurrentEvent(formData: FormData) {
+  await verifyAdminSession();
+
+  const parsed = setCurrentEventSchema.safeParse({
+    eventId: formData.get("eventId"),
+  });
+
+  if (!parsed.success) {
+    configRedirect("current-event-invalid");
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.rpc("set_current_event", {
+    p_shop: env.SHOPIFY_ALLOWED_SHOP_DOMAIN,
+    p_event_id: parsed.data.eventId,
+  });
+
+  if (error) {
+    throw new Error(`Failed to set current event: ${error.message}`);
+  }
+
+  revalidatePath("/config");
+  revalidatePath("/free-passes");
+  configRedirect("current-event-set");
+}
+
+export async function createPassType(formData: FormData) {
+  await verifyAdminSession();
+
+  const parsed = passTypeSchema.safeParse({
+    eventId: formData.get("eventId"),
+    name: formData.get("name"),
+  });
+
+  if (!parsed.success) {
+    configRedirect("pass-type-invalid");
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("event_pass_types").insert({
+    shop: env.SHOPIFY_ALLOWED_SHOP_DOMAIN,
+    event_id: parsed.data.eventId,
+    name: parsed.data.name,
+    category: "free",
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      configRedirect("pass-type-duplicate");
+    }
+
+    throw new Error(`Failed to create pass type: ${error.message}`);
+  }
+
+  revalidatePath("/config");
+  revalidatePath("/free-passes");
+  configRedirect("pass-type-created");
+}
+
+export async function deletePassType(formData: FormData) {
+  await verifyAdminSession();
+
+  const parsed = deletePassTypeSchema.safeParse({
+    passTypeId: formData.get("passTypeId"),
+  });
+
+  if (!parsed.success) {
+    configRedirect("pass-type-invalid");
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from("event_pass_types")
+    .delete()
+    .eq("shop", env.SHOPIFY_ALLOWED_SHOP_DOMAIN)
+    .eq("id", parsed.data.passTypeId);
+
+  if (error) {
+    throw new Error(`Failed to delete pass type: ${error.message}`);
+  }
+
+  revalidatePath("/config");
+  revalidatePath("/free-passes");
+  configRedirect("pass-type-deleted");
 }
 
 export async function deleteTicketProductMapping(formData: FormData) {

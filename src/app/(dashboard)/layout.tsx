@@ -41,6 +41,9 @@ export default async function DashboardLayout({
               <Link className={navLinkClass} href="/attendees">
                 Attendees
               </Link>
+              <Link className={navLinkClass} href="/free-passes">
+                Free passes
+              </Link>
               <Link className={navLinkClass} href="/config">
                 Config
               </Link>

@@ -8,6 +8,7 @@ export type ConfigEvent = {
   name: string;
   startsAt: string | null;
   status: "draft" | "active" | "archived";
+  isCurrent: boolean;
 };
 
 export type TicketProductMapping = {
@@ -19,11 +20,21 @@ export type TicketProductMapping = {
   createdAt: string;
 };
 
+export type ConfigPassType = {
+  id: string;
+  eventId: string;
+  eventName: string;
+  name: string;
+  category: "free" | "paid";
+  createdAt: string;
+};
+
 type EventRow = {
   id: string;
   name: string;
   starts_at: string | null;
   status: "draft" | "active" | "archived";
+  is_current: boolean;
 };
 
 type MappingRow = {
@@ -34,22 +45,36 @@ type MappingRow = {
   created_at: string;
 };
 
+type PassTypeRow = {
+  id: string;
+  event_id: string;
+  name: string;
+  category: "free" | "paid";
+  created_at: string;
+};
+
 export async function getTicketConfig() {
   const shop = env.SHOPIFY_ALLOWED_SHOP_DOMAIN;
   const supabase = createAdminClient();
   const [
     { data: events, error: eventsError },
     { data: mappings, error: mappingsError },
+    { data: passTypes, error: passTypesError },
   ] = await Promise.all([
     supabase
       .from("events")
-      .select("id,name,starts_at,status")
+      .select("id,name,starts_at,status,is_current")
       .eq("shop", shop)
       .order("starts_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false }),
     supabase
       .from("event_ticket_products")
       .select("id,event_id,shopify_product_id,product_title,created_at")
+      .eq("shop", shop)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("event_pass_types")
+      .select("id,event_id,name,category,created_at")
       .eq("shop", shop)
       .order("created_at", { ascending: false }),
   ]);
@@ -64,16 +89,22 @@ export async function getTicketConfig() {
     );
   }
 
+  if (passTypesError) {
+    throw new Error(`Failed to load pass types: ${passTypesError.message}`);
+  }
+
   const eventRows = (events ?? []) as EventRow[];
   const eventNames = new Map(eventRows.map((event) => [event.id, event.name]));
 
   return {
     shop,
+    currentEventId: eventRows.find((event) => event.is_current)?.id ?? null,
     events: eventRows.map((event) => ({
       id: event.id,
       name: event.name,
       startsAt: event.starts_at,
       status: event.status,
+      isCurrent: event.is_current,
     })),
     mappings: ((mappings ?? []) as MappingRow[]).map((mapping) => ({
       id: mapping.id,
@@ -82,6 +113,14 @@ export async function getTicketConfig() {
       shopifyProductId: mapping.shopify_product_id,
       productTitle: mapping.product_title,
       createdAt: mapping.created_at,
+    })),
+    passTypes: ((passTypes ?? []) as PassTypeRow[]).map((passType) => ({
+      id: passType.id,
+      eventId: passType.event_id,
+      eventName: eventNames.get(passType.event_id) ?? "Deleted event",
+      name: passType.name,
+      category: passType.category,
+      createdAt: passType.created_at,
     })),
   };
 }

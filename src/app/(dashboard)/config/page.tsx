@@ -1,7 +1,10 @@
 import {
   createEvent,
+  createPassType,
+  deletePassType,
   deleteTicketProductMapping,
   saveTicketProductMapping,
+  setCurrentEvent,
 } from "@/app/(dashboard)/config/actions";
 import { Container } from "@/components/ui/Container";
 import {
@@ -42,6 +45,18 @@ function statusMessage(status: string | undefined) {
       return "Ticket product mapping removed.";
     case "mapping-invalid":
       return "Choose an event and enter a numeric Shopify product ID.";
+    case "current-event-set":
+      return "Current event updated. Free passes are now issued for it.";
+    case "current-event-invalid":
+      return "Choose a valid event to set as current.";
+    case "pass-type-created":
+      return "Free pass type created.";
+    case "pass-type-deleted":
+      return "Free pass type removed.";
+    case "pass-type-duplicate":
+      return "That event already has a pass type with this name.";
+    case "pass-type-invalid":
+      return "Choose an event and enter a pass type name.";
     default:
       return null;
   }
@@ -75,13 +90,14 @@ export default async function ConfigPage({
         </h1>
         <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
           Map Shopify ticket products to Startup Rev events for{" "}
-          <span className="font-medium text-cream">{config.shop}</span>.
+          <span className="font-medium text-cream">{config.shop}</span>, pick
+          the current event, and define the free pass types admins can issue.
         </p>
       </section>
 
       {message ? <p className={infoMessageClass}>{message}</p> : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div className="grid gap-6 lg:grid-cols-3">
         <section className={`${cardClass} p-6`}>
           <h2 className={h2Class}>Create event</h2>
           <form action={createEvent} className="mt-5 flex flex-col gap-4">
@@ -148,7 +164,103 @@ export default async function ConfigPage({
             </SubmitButton>
           </form>
         </section>
+
+        <section className={`${cardClass} p-6`}>
+          <h2 className={h2Class}>Add free pass type</h2>
+          <p className="mt-2 text-sm text-cream/60">
+            Free passes are not tied to a Shopify product.
+          </p>
+          <form action={createPassType} className="mt-5 flex flex-col gap-4">
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Event</span>
+              <select
+                className={selectClass}
+                defaultValue={config.currentEventId ?? ""}
+                disabled={config.events.length === 0}
+                name="eventId"
+                required
+              >
+                <option value="">Select an event</option>
+                {config.events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Pass type name</span>
+              <input
+                className={inputClass}
+                name="name"
+                placeholder="Investor Pass"
+                required
+                type="text"
+              />
+            </label>
+
+            <SubmitButton disabled={config.events.length === 0}>
+              Add pass type
+            </SubmitButton>
+          </form>
+        </section>
       </div>
+
+      <section className={cardClass}>
+        <div className={cardHeaderClass}>
+          <h2 className={h2Class}>Free pass types</h2>
+        </div>
+
+        {config.passTypes.length === 0 ? (
+          <p className="px-6 py-8 text-sm text-cream/60">
+            No free pass types yet. Add one before issuing free passes.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className={tableClass}>
+              <thead className={tableTheadClass}>
+                <tr>
+                  <th className={tableThClass}>Pass type</th>
+                  <th className={tableThClass}>Event</th>
+                  <th className={tableThClass}>Category</th>
+                  <th className={`${tableThClass} text-right`}>
+                    <span className="sr-only">Action</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className={tableTbodyClass}>
+                {config.passTypes.map((passType) => (
+                  <tr
+                    className="transition-colors hover:bg-cream/[0.02]"
+                    key={passType.id}
+                  >
+                    <td className={tableTdPrimaryClass}>{passType.name}</td>
+                    <td className={tableTdClass}>{passType.eventName}</td>
+                    <td className={tableTdClass}>
+                      <span className={statusBadgeClass(passType.category)}>
+                        {passType.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 align-middle text-right">
+                      <form action={deletePassType}>
+                        <input
+                          name="passTypeId"
+                          type="hidden"
+                          value={passType.id}
+                        />
+                        <SubmitButton size="sm" variant="secondary">
+                          Remove
+                        </SubmitButton>
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section className={cardClass}>
         <div className={cardHeaderClass}>
@@ -207,7 +319,12 @@ export default async function ConfigPage({
 
       <section className={cardClass}>
         <div className={cardHeaderClass}>
-          <h2 className={h2Class}>Events</h2>
+          <div>
+            <h2 className={h2Class}>Events</h2>
+            <p className="mt-1 text-sm text-cream/60">
+              The current event is the one free passes are issued for.
+            </p>
+          </div>
         </div>
 
         {config.events.length === 0 ? (
@@ -218,7 +335,7 @@ export default async function ConfigPage({
           <div className="divide-y divide-cream/5">
             {config.events.map((event) => (
               <div
-                className="flex flex-col gap-2 px-6 py-5 transition-colors hover:bg-cream/[0.02] sm:flex-row sm:items-center sm:justify-between"
+                className="flex flex-col gap-3 px-6 py-5 transition-colors hover:bg-cream/[0.02] sm:flex-row sm:items-center sm:justify-between"
                 key={event.id}
               >
                 <div>
@@ -227,9 +344,21 @@ export default async function ConfigPage({
                     {formatDate(event.startsAt)}
                   </p>
                 </div>
-                <span className={statusBadgeClass(event.status)}>
-                  {event.status}
-                </span>
+                <div className="flex items-center gap-3">
+                  {event.isCurrent ? (
+                    <span className={statusBadgeClass("active")}>Current</span>
+                  ) : (
+                    <form action={setCurrentEvent}>
+                      <input name="eventId" type="hidden" value={event.id} />
+                      <SubmitButton size="sm" variant="secondary">
+                        Set as current
+                      </SubmitButton>
+                    </form>
+                  )}
+                  <span className={statusBadgeClass(event.status)}>
+                    {event.status}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

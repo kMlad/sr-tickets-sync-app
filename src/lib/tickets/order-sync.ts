@@ -3,6 +3,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { sendBuyerTicketManagementEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { generateClaimToken } from "@/lib/tickets/claims";
 import { getTicketManageUrl } from "@/lib/tickets/order-management";
 
 type ShopifyOrderPayload = {
@@ -81,10 +82,6 @@ function asPositiveInteger(value: unknown) {
   }
 
   return Math.floor(parsed);
-}
-
-function generateClaimToken() {
-  return randomBytes(32).toString("base64url");
 }
 
 function generateManageToken() {

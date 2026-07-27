@@ -247,9 +247,11 @@ export default async function AttendeesPage({
                       {attendee.event?.name ?? "Unmapped event"}
                     </td>
                     <td className={tableTdClass}>
-                      {attendee.order?.name ??
-                        attendee.order?.number ??
-                        "Order"}
+                      {attendee.source === "admin"
+                        ? "Free pass"
+                        : (attendee.order?.name ??
+                          attendee.order?.number ??
+                          "Order")}
                     </td>
                     <td className={`${tableTdMetaClass} text-right`}>
                       <span className="block">

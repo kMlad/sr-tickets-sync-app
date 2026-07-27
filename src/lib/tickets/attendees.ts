@@ -32,6 +32,7 @@ type AttendeeRow = {
   affiliation: string | null;
   title: string | null;
   badge_type: string | null;
+  source: "shopify" | "admin";
   claimed_at: string;
   events: Relation<{
     id: string;
@@ -97,6 +98,7 @@ export type AdminAttendee = {
   affiliation: string | null;
   title: string | null;
   badgeType: string | null;
+  source: "shopify" | "admin";
   claimedAt: string;
   week: string;
   event: {
@@ -255,6 +257,7 @@ async function getAttendees(
         "affiliation",
         "title",
         "badge_type",
+        "source",
         "claimed_at",
         "events(id,name,starts_at)",
         "ticket_instances(id,status,product_title)",
@@ -300,6 +303,7 @@ function mapAttendee(row: AttendeeRow): AdminAttendee {
     affiliation: row.affiliation,
     title: row.title,
     badgeType: row.badge_type ?? ticket?.product_title ?? null,
+    source: row.source,
     claimedAt: row.claimed_at,
     week: formatDateKey(startOfUtcWeek(new Date(row.claimed_at))),
     event: event

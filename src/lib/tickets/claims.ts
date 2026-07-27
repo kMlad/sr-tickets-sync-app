@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { getShopifyAppUrl } from "@/lib/shopify/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -38,6 +39,10 @@ export const claimTicketInputSchema = z.object({
   affiliation: z.string().trim().min(1, "Company is required.").max(160),
   title: z.string().trim().min(1, "Position is required.").max(160),
 });
+
+export function generateClaimToken() {
+  return randomBytes(32).toString("base64url");
+}
 
 export function getTicketClaimUrl(claimToken: string) {
   return getShopifyAppUrl(`/claim/${claimToken}`).toString();
