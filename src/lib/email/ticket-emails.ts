@@ -76,7 +76,6 @@ export async function sendAttendeeRegistrationConfirmationEmail(args: {
   const eventName = args.eventName ?? "Startup Rev";
   const passTypeName = args.passTypeName ?? "pass";
   const greeting = args.attendeeName ? `Hi ${args.attendeeName},` : "Hi,";
-  const eventDate = formatEventDate(args.eventStartsAt);
   const subject = `You're confirmed for ${eventName}`;
   const text = `${greeting}
 
@@ -92,9 +91,9 @@ The Startup Revolution Team`;
   const html = emailShell(`
     <p style="margin:0 0 16px">${escapeHtml(greeting)}</p>
     <p style="margin:0 0 16px">Your <strong>${escapeHtml(passTypeName)}</strong> for ${escapeHtml(eventName)} is confirmed.</p>
-    ${eventDate ? `<p style="margin:0 0 16px">When: ${escapeHtml(eventDate)}</p>` : ""}
-    <p style="margin:0 0 24px">There is nothing else you need to do — we already have your details.</p>
-    <p style="margin:0;color:#52525b;font-size:14px">See you there.</p>
+    <p style="margin:0 0 24px">There is nothing else you need to do for now. We'll send the event ticket over once it's ready.</p>
+    <p style="margin:0 0 16px">Excited to see you there!</p>
+    <p style="margin:0;color:#52525b;font-size:14px">Best,<br />The Startup Revolution Team</p>
   `);
 
   return sendTransactionalEmail({
@@ -104,23 +103,6 @@ The Startup Revolution Team`;
     html,
     idempotencyKey: args.idempotencyKey,
   });
-}
-
-function formatEventDate(value: string | null) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "full",
-    timeZone: "UTC",
-  }).format(date);
 }
 
 export async function sendAttendeeTicketClaimEmail(args: {
