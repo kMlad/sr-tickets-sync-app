@@ -78,10 +78,11 @@ export async function sendAttendeeRegistrationConfirmationEmail(args: {
   const greeting = args.attendeeName ? `Hi ${args.attendeeName},` : "Hi,";
   const eventDate = formatEventDate(args.eventStartsAt);
   const subject = `You're confirmed for ${eventName}`;
-  const dateLine = eventDate ? `\n\nWhen: ${eventDate}` : "";
   const text = `${greeting}
 
-Your ${passTypeName} for ${eventName} is confirmed. There is nothing else you need to do for now. We'll send the event ticket over once it's ready.${dateLine}
+Your ${passTypeName} for ${eventName} is confirmed. 
+
+There is nothing else you need to do for now. We'll send the event ticket over once it's ready.
 
 Excited to see you there!
 

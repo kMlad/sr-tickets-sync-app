@@ -192,7 +192,7 @@ export async function createFreePassAttendee(
   const emailSent = await sendConfirmation({
     attendeeId,
     email: input.email,
-    attendeeName: `${input.firstName} ${input.lastName}`.trim(),
+    attendeeName: `${input.firstName}`.trim(),
     event: currentEvent,
     passTypeId: input.passTypeId,
   });
