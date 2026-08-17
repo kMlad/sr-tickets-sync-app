@@ -3,21 +3,13 @@ import "server-only";
 import { env } from "@/env";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export {
+  AGORIFY_ATTENDEE_CSV_HEADERS,
+  buildAgorifyAttendeesCsv,
+} from "@/lib/tickets/attendees-csv";
+
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-export const AGORIFY_ATTENDEE_CSV_HEADERS = [
-  "email",
-  "firstname",
-  "lastname",
-  "type",
-  "affiliation",
-  "title",
-  "badgetype",
-  "affiliationphonenumber",
-  "attendeephonenumber",
-  "attendeelocation",
-] as const;
 
 type Relation<T> = T | T[] | null;
 
@@ -32,6 +24,7 @@ type AttendeeRow = {
   affiliation: string | null;
   title: string | null;
   badge_type: string | null;
+  added_in_agorify: boolean;
   source: "shopify" | "admin";
   claimed_at: string;
   events: Relation<{
@@ -61,9 +54,12 @@ type WeekRow = {
   claimed_at: string;
 };
 
+export type AgorifyStatusFilter = "added" | "not-added";
+
 export type AttendeeFilterInput = {
   eventId?: string | null;
   week?: string | null;
+  agorifyStatus?: string | null;
 };
 
 export type NormalizedAttendeeFilters = {
@@ -71,6 +67,7 @@ export type NormalizedAttendeeFilters = {
   week: string | null;
   weekStartIso: string | null;
   weekEndIso: string | null;
+  agorifyStatus: AgorifyStatusFilter | null;
 };
 
 export type AttendeeEventOption = {
@@ -98,6 +95,7 @@ export type AdminAttendee = {
   affiliation: string | null;
   title: string | null;
   badgeType: string | null;
+  addedInAgorify: boolean;
   source: "shopify" | "admin";
   claimedAt: string;
   week: string;
@@ -131,6 +129,10 @@ export function normalizeAttendeeFilters(
   const eventId =
     input.eventId && UUID_PATTERN.test(input.eventId) ? input.eventId : null;
   const weekStart = input.week ? parseDateKey(input.week) : null;
+  const agorifyStatus =
+    input.agorifyStatus === "added" || input.agorifyStatus === "not-added"
+      ? input.agorifyStatus
+      : null;
 
   if (!weekStart) {
     return {
@@ -138,6 +140,7 @@ export function normalizeAttendeeFilters(
       week: null,
       weekStartIso: null,
       weekEndIso: null,
+      agorifyStatus,
     };
   }
 
@@ -149,6 +152,7 @@ export function normalizeAttendeeFilters(
     week: formatDateKey(normalizedWeekStart),
     weekStartIso: normalizedWeekStart.toISOString(),
     weekEndIso: weekEnd.toISOString(),
+    agorifyStatus,
   };
 }
 
@@ -199,27 +203,9 @@ export async function getAttendeesDashboard(
 export async function getAttendeesForExport(
   input: AttendeeFilterInput = {},
 ): Promise<AdminAttendee[]> {
-  return getAttendees(normalizeAttendeeFilters(input));
-}
-
-export function buildAgorifyAttendeesCsv(attendees: AdminAttendee[]) {
-  const rows = attendees.map((attendee) => [
-    attendee.email,
-    attendee.firstName,
-    attendee.lastName,
-    attendee.attendeeType,
-    attendee.affiliation ?? "",
-    attendee.title ?? "",
-    attendee.badgeType ?? "",
-    "",
-    attendee.phone ?? "",
-    "",
-  ]);
-
-  return [
-    AGORIFY_ATTENDEE_CSV_HEADERS.join(","),
-    ...rows.map((row) => row.map(escapeCsvValue).join(",")),
-  ].join("\r\n");
+  return getAttendees(normalizeAttendeeFilters(input), {
+    excludeAddedInAgorify: true,
+  });
 }
 
 function getWeekRows(filters: NormalizedAttendeeFilters) {
@@ -235,11 +221,16 @@ function getWeekRows(filters: NormalizedAttendeeFilters) {
     query = query.eq("event_id", filters.eventId);
   }
 
+  if (filters.agorifyStatus) {
+    query = query.eq("added_in_agorify", filters.agorifyStatus === "added");
+  }
+
   return query;
 }
 
 async function getAttendees(
   filters: NormalizedAttendeeFilters,
+  options: { excludeAddedInAgorify?: boolean } = {},
 ): Promise<AdminAttendee[]> {
   const shop = env.SHOPIFY_ALLOWED_SHOP_DOMAIN;
   const supabase = createAdminClient();
@@ -257,6 +248,7 @@ async function getAttendees(
         "affiliation",
         "title",
         "badge_type",
+        "added_in_agorify",
         "source",
         "claimed_at",
         "events(id,name,starts_at)",
@@ -275,6 +267,12 @@ async function getAttendees(
     query = query
       .gte("claimed_at", filters.weekStartIso)
       .lt("claimed_at", filters.weekEndIso);
+  }
+
+  if (options.excludeAddedInAgorify) {
+    query = query.eq("added_in_agorify", false);
+  } else if (filters.agorifyStatus) {
+    query = query.eq("added_in_agorify", filters.agorifyStatus === "added");
   }
 
   const { data, error } = await query;
@@ -303,6 +301,7 @@ function mapAttendee(row: AttendeeRow): AdminAttendee {
     affiliation: row.affiliation,
     title: row.title,
     badgeType: row.badge_type ?? ticket?.product_title ?? null,
+    addedInAgorify: row.added_in_agorify,
     source: row.source,
     claimedAt: row.claimed_at,
     week: formatDateKey(startOfUtcWeek(new Date(row.claimed_at))),
@@ -361,14 +360,6 @@ function splitName(name: string) {
 
 function firstRelation<T>(value: Relation<T>) {
   return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
-function escapeCsvValue(value: string) {
-  if (!/[",\r\n]/.test(value)) {
-    return value;
-  }
-
-  return `"${value.replaceAll('"', '""')}"`;
 }
 
 function parseDateKey(value: string) {

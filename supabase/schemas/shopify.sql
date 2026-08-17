@@ -156,6 +156,7 @@ create table public.attendees (
   affiliation text,
   title text,
   badge_type text,
+  added_in_agorify boolean not null default false,
   metadata jsonb not null default '{}'::jsonb,
   confirmation_sent_at timestamptz,
   claimed_at timestamptz not null default now(),

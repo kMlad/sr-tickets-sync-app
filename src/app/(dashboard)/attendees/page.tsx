@@ -1,4 +1,4 @@
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { Button, ButtonAnchor, ButtonLink } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import {
   cardClass,
@@ -20,6 +20,8 @@ import {
   type AttendeeWeekOption,
   getAttendeesDashboard,
 } from "@/lib/tickets/attendees";
+import { setAttendeeAgorifyStatus } from "./actions";
+import { AgorifyToggle } from "./agorify-toggle";
 
 function singleValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -103,8 +105,11 @@ export default async function AttendeesPage({
   const data = await getAttendeesDashboard({
     eventId: singleValue(query.eventId),
     week: singleValue(query.week),
+    agorifyStatus: singleValue(query.agorifyStatus),
   });
-  const hasFilters = Boolean(data.filters.eventId || data.filters.week);
+  const hasFilters = Boolean(
+    data.filters.eventId || data.filters.week || data.filters.agorifyStatus,
+  );
   const exportHref = buildAttendeesUrl("/attendees/export", data.filters);
   const selectedWeekInOptions = data.weeks.some(
     (week) => week.value === data.filters.week,
@@ -121,17 +126,17 @@ export default async function AttendeesPage({
           <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
             Review submitted attendee details for{" "}
             <span className="font-medium text-cream">{data.shop}</span> and
-            export the current view for Agorify.
+            export attendees not yet added to Agorify.
           </p>
         </div>
-        <ButtonLink href={exportHref} size="md">
+        <ButtonAnchor download href={exportHref} size="md">
           Export CSV
-        </ButtonLink>
+        </ButtonAnchor>
       </section>
 
       <section className={`${cardClass} p-5`}>
         <form
-          className="grid gap-4 lg:grid-cols-[1fr_1fr_auto_auto]"
+          className="grid gap-4 lg:grid-cols-3 xl:grid-cols-[1fr_1fr_1fr_auto_auto]"
           method="get"
         >
           <label className="flex flex-col gap-2">
@@ -168,6 +173,19 @@ export default async function AttendeesPage({
                   {weekLabel(week)}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-2">
+            <span className={labelClass}>Agorify status</span>
+            <select
+              className={selectClass}
+              defaultValue={data.filters.agorifyStatus ?? ""}
+              name="agorifyStatus"
+            >
+              <option value="">All attendees</option>
+              <option value="added">Added</option>
+              <option value="not-added">Not added</option>
             </select>
           </label>
 
@@ -217,6 +235,7 @@ export default async function AttendeesPage({
                   <th className={tableThClass}>Badge</th>
                   <th className={tableThClass}>Event</th>
                   <th className={tableThClass}>Order</th>
+                  <th className={tableThClass}>Added in Agorify</th>
                   <th className={`${tableThClass} text-right`}>Submitted</th>
                 </tr>
               </thead>
@@ -252,6 +271,16 @@ export default async function AttendeesPage({
                         : (attendee.order?.name ??
                           attendee.order?.number ??
                           "Order")}
+                    </td>
+                    <td className={tableTdClass}>
+                      <form action={setAttendeeAgorifyStatus}>
+                        <input
+                          name="attendeeId"
+                          type="hidden"
+                          value={attendee.id}
+                        />
+                        <AgorifyToggle checked={attendee.addedInAgorify} />
+                      </form>
                     </td>
                     <td className={`${tableTdMetaClass} text-right`}>
                       <span className="block">

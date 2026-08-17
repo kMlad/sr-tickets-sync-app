@@ -72,3 +72,22 @@ export function ButtonLink({
     </Link>
   );
 }
+
+export function ButtonAnchor({
+  variant = "primary",
+  size = "md",
+  className,
+  children,
+  href,
+  ...rest
+}: AnchorProps) {
+  return (
+    <a
+      href={href}
+      className={cn(base, variants[variant], sizes[size], className)}
+      {...rest}
+    >
+      {children}
+    </a>
+  );
+}
