@@ -11,6 +11,8 @@ export const AGORIFY_ATTENDEE_CSV_HEADERS = [
   "attendeelocation",
 ] as const;
 
+const AGORIFY_ATTENDEE_LOCATION = "on-site";
+
 type AgorifyCsvAttendee = {
   email: string;
   firstName: string;
@@ -36,7 +38,7 @@ export function buildAgorifyAttendeesCsv(attendees: AgorifyCsvAttendee[]) {
       attendee.badgeType ?? "",
       "",
       attendee.phone ?? "",
-      "",
+      AGORIFY_ATTENDEE_LOCATION,
     ]);
 
   return [
