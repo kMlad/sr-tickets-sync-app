@@ -47,17 +47,6 @@ create table public.events (
   unique (id, shop)
 );
 
-create table public.event_ticket_products (
-  id uuid primary key default gen_random_uuid(),
-  event_id uuid not null,
-  shop text not null,
-  shopify_product_id text not null,
-  product_title text,
-  created_at timestamptz not null default now(),
-  foreign key (event_id, shop) references public.events (id, shop) on delete cascade,
-  unique (shop, shopify_product_id)
-);
-
 create table public.event_pass_types (
   id uuid primary key default gen_random_uuid(),
   event_id uuid not null,
@@ -67,6 +56,22 @@ create table public.event_pass_types (
   created_at timestamptz not null default now(),
   foreign key (event_id, shop) references public.events (id, shop) on delete cascade,
   unique (event_id, name)
+);
+
+create table public.event_ticket_products (
+  id uuid primary key default gen_random_uuid(),
+  event_id uuid not null,
+  shop text not null,
+  shopify_product_id text not null,
+  shopify_variant_id text,
+  pass_type_id uuid references public.event_pass_types (id) on delete restrict,
+  product_title text,
+  created_at timestamptz not null default now(),
+  foreign key (event_id, shop) references public.events (id, shop) on delete cascade,
+  unique nulls not distinct (shop, shopify_product_id, shopify_variant_id),
+  constraint event_ticket_products_variant_pass_type_required check (
+    shopify_variant_id is null or pass_type_id is not null
+  )
 );
 
 create table public.buyers (
@@ -110,6 +115,7 @@ create table public.ticket_instances (
   pass_type_id uuid references public.event_pass_types (id) on delete set null,
   source text not null default 'shopify' check (source in ('shopify', 'admin')),
   shopify_product_id text,
+  shopify_variant_id text,
   shopify_line_item_id text,
   shopify_line_item_position integer,
   product_title text,
@@ -262,6 +268,7 @@ begin
     event_id,
     order_id,
     buyer_id,
+    pass_type_id,
     name,
     first_name,
     last_name,
@@ -278,6 +285,7 @@ begin
     v_ticket.event_id,
     v_ticket.order_id,
     v_ticket.buyer_id,
+    v_ticket.pass_type_id,
     concat_ws(' ', trim(p_first_name), trim(p_last_name)),
     trim(p_first_name),
     trim(p_last_name),
@@ -285,7 +293,10 @@ begin
     'attendee',
     trim(p_affiliation),
     trim(p_title),
-    v_ticket.product_title,
+    coalesce(
+      (select name from public.event_pass_types where id = v_ticket.pass_type_id),
+      v_ticket.product_title
+    ),
     coalesce(p_metadata, '{}'::jsonb)
   )
   returning id into v_attendee_id;

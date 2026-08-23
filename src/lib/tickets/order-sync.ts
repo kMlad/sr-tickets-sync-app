@@ -5,6 +5,11 @@ import { sendBuyerTicketManagementEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateClaimToken } from "@/lib/tickets/claims";
 import { getTicketManageUrl } from "@/lib/tickets/order-management";
+import {
+  findShopifyProductMapping,
+  indexShopifyProductMappings,
+  type ShopifyProductMapping,
+} from "@/lib/tickets/shopify-product-mappings";
 
 type ShopifyOrderPayload = {
   id?: number | string;
@@ -33,15 +38,20 @@ type ShopifyLineItemPayload = {
   id?: number | string;
   admin_graphql_api_id?: string;
   product_id?: number | string | null;
+  variant_id?: number | string | null;
+  variant_title?: string | null;
   title?: string | null;
   name?: string | null;
   quantity?: number | string | null;
   price?: string | number | null;
 };
 
-type ProductMapping = {
+type ProductMappingRow = {
   event_id: string;
   shopify_product_id: string;
+  shopify_variant_id: string | null;
+  pass_type_id: string | null;
+  event_pass_types: { name: string } | { name: string }[] | null;
 };
 
 type SyncedOrder = {
@@ -260,13 +270,15 @@ async function upsertOrder(
 
 async function loadProductMappings(shop: string, productIds: string[]) {
   if (productIds.length === 0) {
-    return new Map<string, ProductMapping>();
+    return new Map<string, ShopifyProductMapping>();
   }
 
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("event_ticket_products")
-    .select("event_id,shopify_product_id")
+    .select(
+      "event_id,shopify_product_id,shopify_variant_id,pass_type_id,event_pass_types(name)",
+    )
     .eq("shop", shop)
     .in("shopify_product_id", productIds);
 
@@ -274,11 +286,20 @@ async function loadProductMappings(shop: string, productIds: string[]) {
     throw new Error(`Failed to load ticket product mappings: ${error.message}`);
   }
 
-  return new Map(
-    (data as ProductMapping[]).map((mapping) => [
-      mapping.shopify_product_id,
-      mapping,
-    ]),
+  return indexShopifyProductMappings(
+    (data as ProductMappingRow[]).map((mapping) => {
+      const passType = Array.isArray(mapping.event_pass_types)
+        ? mapping.event_pass_types[0]
+        : mapping.event_pass_types;
+
+      return {
+        event_id: mapping.event_id,
+        shopify_product_id: mapping.shopify_product_id,
+        shopify_variant_id: mapping.shopify_variant_id,
+        pass_type_id: mapping.pass_type_id,
+        ticket_type_name: passType?.name ?? null,
+      };
+    }),
   );
 }
 
@@ -298,7 +319,12 @@ export async function syncTicketsFromShopifyOrder(args: {
   const productMappings = await loadProductMappings(args.shop, productIds);
   const ticketLineItems = lineItems.filter((lineItem) => {
     const productId = asText(lineItem.product_id);
-    return productId ? productMappings.has(productId) : false;
+    const variantId = asText(lineItem.variant_id);
+    return productId
+      ? Boolean(
+          findShopifyProductMapping(productMappings, productId, variantId),
+        )
+      : false;
   });
 
   if (ticketLineItems.length === 0) {
@@ -310,8 +336,11 @@ export async function syncTicketsFromShopifyOrder(args: {
   const currencyCode = asNullableText(order.currency_code ?? order.currency);
   const rows = ticketLineItems.flatMap((lineItem) => {
     const productId = asText(lineItem.product_id);
+    const variantId = asText(lineItem.variant_id);
     const lineItemId = asText(lineItem.id ?? lineItem.admin_graphql_api_id);
-    const mapping = productId ? productMappings.get(productId) : undefined;
+    const mapping = productId
+      ? findShopifyProductMapping(productMappings, productId, variantId)
+      : undefined;
     const quantity = asPositiveInteger(lineItem.quantity);
 
     if (!productId || !lineItemId || !mapping || quantity === 0) {
@@ -323,10 +352,17 @@ export async function syncTicketsFromShopifyOrder(args: {
       event_id: mapping.event_id,
       order_id: syncedOrder.id,
       buyer_id: buyerId,
+      pass_type_id: mapping.pass_type_id,
       shopify_product_id: productId,
+      shopify_variant_id: variantId,
       shopify_line_item_id: lineItemId,
       shopify_line_item_position: index + 1,
-      product_title: asNullableText(lineItem.title ?? lineItem.name),
+      product_title:
+        mapping.ticket_type_name ??
+        (mapping.shopify_variant_id
+          ? asNullableText(lineItem.variant_title)
+          : null) ??
+        asNullableText(lineItem.title ?? lineItem.name),
       price: lineItem.price ?? null,
       currency_code: currencyCode,
       claim_token: generateClaimToken(),

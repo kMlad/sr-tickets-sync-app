@@ -12,11 +12,18 @@ const createEventSchema = z.object({
   startsAt: z.string().trim().optional(),
 });
 
-const mappingSchema = z.object({
-  eventId: z.uuid(),
-  shopifyProductId: z.string().trim().regex(/^\d+$/),
-  productTitle: z.string().trim().max(160).optional(),
-});
+const mappingSchema = z
+  .object({
+    eventId: z.uuid(),
+    shopifyProductId: z.string().trim().regex(/^\d+$/),
+    shopifyVariantId: z.string().trim().regex(/^\d+$/).optional(),
+    passTypeId: z.uuid().optional(),
+    productTitle: z.string().trim().max(160).optional(),
+  })
+  .refine((mapping) => !mapping.shopifyVariantId || mapping.passTypeId, {
+    message: "A ticket type is required for variant mappings.",
+    path: ["passTypeId"],
+  });
 
 const deleteMappingSchema = z.object({
   mappingId: z.uuid(),
@@ -29,6 +36,7 @@ const setCurrentEventSchema = z.object({
 const passTypeSchema = z.object({
   eventId: z.uuid(),
   name: z.string().trim().min(1).max(160),
+  category: z.enum(["free", "paid"]),
 });
 
 const deletePassTypeSchema = z.object({
@@ -87,6 +95,8 @@ export async function saveTicketProductMapping(formData: FormData) {
   const parsed = mappingSchema.safeParse({
     eventId: formData.get("eventId"),
     shopifyProductId: formData.get("shopifyProductId"),
+    shopifyVariantId: formData.get("shopifyVariantId") || undefined,
+    passTypeId: formData.get("passTypeId") || undefined,
     productTitle: formData.get("productTitle") || undefined,
   });
 
@@ -95,14 +105,36 @@ export async function saveTicketProductMapping(formData: FormData) {
   }
 
   const supabase = createAdminClient();
+  if (parsed.data.passTypeId) {
+    const { data: passType, error: passTypeError } = await supabase
+      .from("event_pass_types")
+      .select("id")
+      .eq("id", parsed.data.passTypeId)
+      .eq("event_id", parsed.data.eventId)
+      .eq("shop", env.SHOPIFY_ALLOWED_SHOP_DOMAIN)
+      .maybeSingle();
+
+    if (passTypeError) {
+      throw new Error(
+        `Failed to validate ticket type: ${passTypeError.message}`,
+      );
+    }
+
+    if (!passType) {
+      configRedirect("mapping-invalid");
+    }
+  }
+
   const { error } = await supabase.from("event_ticket_products").upsert(
     {
       shop: env.SHOPIFY_ALLOWED_SHOP_DOMAIN,
       event_id: parsed.data.eventId,
       shopify_product_id: parsed.data.shopifyProductId,
+      shopify_variant_id: parsed.data.shopifyVariantId || null,
+      pass_type_id: parsed.data.passTypeId || null,
       product_title: parsed.data.productTitle || null,
     },
-    { onConflict: "shop,shopify_product_id" },
+    { onConflict: "shop,shopify_product_id,shopify_variant_id" },
   );
 
   if (error) {
@@ -145,6 +177,7 @@ export async function createPassType(formData: FormData) {
   const parsed = passTypeSchema.safeParse({
     eventId: formData.get("eventId"),
     name: formData.get("name"),
+    category: formData.get("category"),
   });
 
   if (!parsed.success) {
@@ -156,7 +189,7 @@ export async function createPassType(formData: FormData) {
     shop: env.SHOPIFY_ALLOWED_SHOP_DOMAIN,
     event_id: parsed.data.eventId,
     name: parsed.data.name,
-    category: "free",
+    category: parsed.data.category,
   });
 
   if (error) {
@@ -191,6 +224,10 @@ export async function deletePassType(formData: FormData) {
     .eq("id", parsed.data.passTypeId);
 
   if (error) {
+    if (error.code === "23503") {
+      configRedirect("pass-type-in-use");
+    }
+
     throw new Error(`Failed to delete pass type: ${error.message}`);
   }
 

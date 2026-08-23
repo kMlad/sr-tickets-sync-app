@@ -16,6 +16,9 @@ export type TicketProductMapping = {
   eventId: string;
   eventName: string;
   shopifyProductId: string;
+  shopifyVariantId: string | null;
+  passTypeId: string | null;
+  passTypeName: string | null;
   productTitle: string | null;
   createdAt: string;
 };
@@ -41,6 +44,8 @@ type MappingRow = {
   id: string;
   event_id: string;
   shopify_product_id: string;
+  shopify_variant_id: string | null;
+  pass_type_id: string | null;
   product_title: string | null;
   created_at: string;
 };
@@ -69,7 +74,9 @@ export async function getTicketConfig() {
       .order("created_at", { ascending: false }),
     supabase
       .from("event_ticket_products")
-      .select("id,event_id,shopify_product_id,product_title,created_at")
+      .select(
+        "id,event_id,shopify_product_id,shopify_variant_id,pass_type_id,product_title,created_at",
+      )
       .eq("shop", shop)
       .order("created_at", { ascending: false }),
     supabase
@@ -95,6 +102,10 @@ export async function getTicketConfig() {
 
   const eventRows = (events ?? []) as EventRow[];
   const eventNames = new Map(eventRows.map((event) => [event.id, event.name]));
+  const passTypeRows = (passTypes ?? []) as PassTypeRow[];
+  const passTypeNames = new Map(
+    passTypeRows.map((passType) => [passType.id, passType.name]),
+  );
 
   return {
     shop,
@@ -111,10 +122,15 @@ export async function getTicketConfig() {
       eventId: mapping.event_id,
       eventName: eventNames.get(mapping.event_id) ?? "Deleted event",
       shopifyProductId: mapping.shopify_product_id,
+      shopifyVariantId: mapping.shopify_variant_id,
+      passTypeId: mapping.pass_type_id,
+      passTypeName: mapping.pass_type_id
+        ? (passTypeNames.get(mapping.pass_type_id) ?? "Deleted ticket type")
+        : null,
       productTitle: mapping.product_title,
       createdAt: mapping.created_at,
     })),
-    passTypes: ((passTypes ?? []) as PassTypeRow[]).map((passType) => ({
+    passTypes: passTypeRows.map((passType) => ({
       id: passType.id,
       eventId: passType.event_id,
       eventName: eventNames.get(passType.event_id) ?? "Deleted event",

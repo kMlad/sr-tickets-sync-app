@@ -44,17 +44,19 @@ function statusMessage(status: string | undefined) {
     case "mapping-deleted":
       return "Ticket product mapping removed.";
     case "mapping-invalid":
-      return "Choose an event and enter a numeric Shopify product ID.";
+      return "Choose an event, enter numeric Shopify IDs, and select a ticket type for variant mappings.";
     case "current-event-set":
       return "Current event updated. Free passes are now issued for it.";
     case "current-event-invalid":
       return "Choose a valid event to set as current.";
     case "pass-type-created":
-      return "Free pass type created.";
+      return "Ticket type created.";
     case "pass-type-deleted":
-      return "Free pass type removed.";
+      return "Ticket type removed.";
     case "pass-type-duplicate":
       return "That event already has a pass type with this name.";
+    case "pass-type-in-use":
+      return "That ticket type is used by a Shopify mapping and cannot be removed.";
     case "pass-type-invalid":
       return "Choose an event and enter a pass type name.";
     default:
@@ -91,7 +93,7 @@ export default async function ConfigPage({
         <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
           Map Shopify ticket products to Startup Rev events for{" "}
           <span className="font-medium text-cream">{config.shop}</span>, pick
-          the current event, and define the free pass types admins can issue.
+          the current event, and define ticket types for paid and free passes.
         </p>
       </section>
 
@@ -155,6 +157,35 @@ export default async function ConfigPage({
             </label>
 
             <label className="flex flex-col gap-2">
+              <span className={labelClass}>Shopify variant ID (optional)</span>
+              <input
+                className={inputClass}
+                inputMode="numeric"
+                name="shopifyVariantId"
+                pattern="[0-9]+"
+                type="text"
+              />
+              <span className="text-xs text-cream/50">
+                Leave blank to track every variant of the product.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Ticket type</span>
+              <select className={selectClass} name="passTypeId">
+                <option value="">No ticket type</option>
+                {config.passTypes.map((passType) => (
+                  <option key={passType.id} value={passType.id}>
+                    {passType.eventName} — {passType.name}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-cream/50">
+                Required when mapping a specific variant.
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-2">
               <span className={labelClass}>Product title</span>
               <input className={inputClass} name="productTitle" type="text" />
             </label>
@@ -166,9 +197,10 @@ export default async function ConfigPage({
         </section>
 
         <section className={`${cardClass} p-6`}>
-          <h2 className={h2Class}>Add free pass type</h2>
+          <h2 className={h2Class}>Add ticket type</h2>
           <p className="mt-2 text-sm text-cream/60">
-            Free passes are not tied to a Shopify product.
+            Paid types can be assigned to Shopify products or variants. Free
+            types are available when issuing passes manually.
           </p>
           <form action={createPassType} className="mt-5 flex flex-col gap-4">
             <label className="flex flex-col gap-2">
@@ -190,7 +222,7 @@ export default async function ConfigPage({
             </label>
 
             <label className="flex flex-col gap-2">
-              <span className={labelClass}>Pass type name</span>
+              <span className={labelClass}>Ticket type name</span>
               <input
                 className={inputClass}
                 name="name"
@@ -200,8 +232,16 @@ export default async function ConfigPage({
               />
             </label>
 
+            <label className="flex flex-col gap-2">
+              <span className={labelClass}>Category</span>
+              <select className={selectClass} name="category" required>
+                <option value="paid">Paid</option>
+                <option value="free">Free</option>
+              </select>
+            </label>
+
             <SubmitButton disabled={config.events.length === 0}>
-              Add pass type
+              Add ticket type
             </SubmitButton>
           </form>
         </section>
@@ -209,12 +249,13 @@ export default async function ConfigPage({
 
       <section className={cardClass}>
         <div className={cardHeaderClass}>
-          <h2 className={h2Class}>Free pass types</h2>
+          <h2 className={h2Class}>Ticket types</h2>
         </div>
 
         {config.passTypes.length === 0 ? (
           <p className="px-6 py-8 text-sm text-cream/60">
-            No free pass types yet. Add one before issuing free passes.
+            No ticket types yet. Add one before mapping variants or issuing free
+            passes.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -277,7 +318,9 @@ export default async function ConfigPage({
               <thead className={tableTheadClass}>
                 <tr>
                   <th className={tableThClass}>Product</th>
-                  <th className={`${tableThClass} text-right`}>Shopify ID</th>
+                  <th className={`${tableThClass} text-right`}>Product ID</th>
+                  <th className={`${tableThClass} text-right`}>Variant ID</th>
+                  <th className={tableThClass}>Ticket type</th>
                   <th className={tableThClass}>Event</th>
                   <th className={`${tableThClass} text-right`}>
                     <span className="sr-only">Action</span>
@@ -295,6 +338,12 @@ export default async function ConfigPage({
                     </td>
                     <td className={tableTdNumClass}>
                       {mapping.shopifyProductId}
+                    </td>
+                    <td className={tableTdNumClass}>
+                      {mapping.shopifyVariantId ?? "All"}
+                    </td>
+                    <td className={tableTdClass}>
+                      {mapping.passTypeName ?? "—"}
                     </td>
                     <td className={tableTdClass}>{mapping.eventName}</td>
                     <td className="px-6 py-4 align-middle text-right">
