@@ -5,8 +5,10 @@ import { sendBuyerTicketManagementEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateClaimToken } from "@/lib/tickets/claims";
 import { getTicketManageUrl } from "@/lib/tickets/order-management";
+import { hasSuccessfulShopifyPayment } from "@/lib/tickets/shopify-order-payment";
 import {
   findShopifyProductMapping,
+  hasPaidTicketMapping,
   indexShopifyProductMappings,
   type ShopifyProductMapping,
 } from "@/lib/tickets/shopify-product-mappings";
@@ -22,6 +24,7 @@ type ShopifyOrderPayload = {
   currency?: string | null;
   currency_code?: string | null;
   total_price?: string | number | null;
+  financial_status?: string | null;
   created_at?: string | null;
   customer?: {
     id?: number | string;
@@ -51,7 +54,10 @@ type ProductMappingRow = {
   shopify_product_id: string;
   shopify_variant_id: string | null;
   pass_type_id: string | null;
-  event_pass_types: { name: string } | { name: string }[] | null;
+  event_pass_types:
+    | { name: string; category: "free" | "paid" }
+    | { name: string; category: "free" | "paid" }[]
+    | null;
 };
 
 type SyncedOrder = {
@@ -277,7 +283,7 @@ async function loadProductMappings(shop: string, productIds: string[]) {
   const { data, error } = await supabase
     .from("event_ticket_products")
     .select(
-      "event_id,shopify_product_id,shopify_variant_id,pass_type_id,event_pass_types(name)",
+      "event_id,shopify_product_id,shopify_variant_id,pass_type_id,event_pass_types(name,category)",
     )
     .eq("shop", shop)
     .in("shopify_product_id", productIds);
@@ -298,6 +304,7 @@ async function loadProductMappings(shop: string, productIds: string[]) {
         shopify_variant_id: mapping.shopify_variant_id,
         pass_type_id: mapping.pass_type_id,
         ticket_type_name: passType?.name ?? null,
+        ticket_type_category: passType?.category ?? null,
       };
     }),
   );
@@ -373,6 +380,17 @@ export async function syncTicketsFromShopifyOrder(args: {
     return { ticketsCreated: 0, orderSynced: true };
   }
 
+  const includesPaidTicket = hasPaidTicketMapping(
+    productMappings.values(),
+    rows.map((row) => ({
+      passTypeId: row.pass_type_id,
+      price: row.price,
+    })),
+  );
+  const hasSuccessfulPayment = hasSuccessfulShopifyPayment(
+    order.financial_status,
+  );
+
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("ticket_instances")
@@ -386,12 +404,14 @@ export async function syncTicketsFromShopifyOrder(args: {
     throw new Error(`Failed to create ticket instances: ${error.message}`);
   }
 
-  await sendBuyerNotificationIfNeeded({
-    order: syncedOrder,
-    buyerEmail: getBuyerEmail(order),
-    buyerName: getBuyerName(order),
-    ticketCount: rows.length,
-  });
+  if (hasSuccessfulPayment && includesPaidTicket) {
+    await sendBuyerNotificationIfNeeded({
+      order: syncedOrder,
+      buyerEmail: getBuyerEmail(order),
+      buyerName: getBuyerName(order),
+      ticketCount: rows.length,
+    });
+  }
 
   return { ticketsCreated: data?.length ?? 0, orderSynced: true };
 }

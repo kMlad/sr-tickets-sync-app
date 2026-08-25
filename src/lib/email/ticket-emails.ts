@@ -2,6 +2,9 @@ import "server-only";
 
 import { sendTransactionalEmail } from "@/lib/email/resend";
 
+const SKOPJE_MARATHON_REGISTRATION_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSce2niDL6FbhOC-wWszgvQPPi1tdz1sEEJ0lUnxEBW06wBJVA/viewform?usp=header";
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -111,20 +114,35 @@ export async function sendAttendeeTicketClaimEmail(args: {
   orderName: string | null;
   ticketName: string | null;
   claimUrl: string;
+  includeMarathonRegistration: boolean;
   idempotencyKey: string;
 }) {
   const eventName = args.eventName ?? "Startup Rev";
   const ticketName = args.ticketName ?? "ticket";
   const subject = `Your ${eventName} ticket`;
+  const marathonText = args.includeMarathonRegistration
+    ? `
+
+Your ticket also includes free registration for the Wizz Air Skopje Marathon. Fill in your marathon details here:
+${SKOPJE_MARATHON_REGISTRATION_URL}`
+    : "";
   const text = `You have been sent a ${ticketName}.
 
 Use this link to fill in your attendee details:
-${args.claimUrl}`;
+${args.claimUrl}${marathonText}`;
+
+  const marathonHtml = args.includeMarathonRegistration
+    ? `
+      <p style="margin:24px 0 16px">Your ticket also includes <strong>free registration for the Wizz Air Skopje Marathon</strong>. Fill in your marathon details using the link below.</p>
+      <p style="margin:0 0 24px">${linkHtml(SKOPJE_MARATHON_REGISTRATION_URL, "Fill marathon details")}</p>
+    `
+    : "";
 
   const html = emailShell(`
     <p style="margin:0 0 16px">You have been sent a ${escapeHtml(ticketName)}${args.orderName ? ` from ${escapeHtml(args.orderName)}` : ""}.</p>
     <p style="margin:0 0 24px">Use this link to fill in your attendee details.</p>
     <p style="margin:0 0 24px">${linkHtml(args.claimUrl, "Fill attendee details")}</p>
+    ${marathonHtml}
     <p style="margin:0;color:#52525b;font-size:14px">${escapeHtml(eventName)}</p>
   `);
 

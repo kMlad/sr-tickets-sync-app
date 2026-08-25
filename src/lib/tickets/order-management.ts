@@ -5,6 +5,7 @@ import { sendAttendeeTicketClaimEmail } from "@/lib/email/ticket-emails";
 import { getShopifyAppUrl } from "@/lib/shopify/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTicketClaimUrl } from "@/lib/tickets/claims";
+import { includesMarathonRegistration } from "@/lib/tickets/marathon-registration";
 
 export const sendTicketInviteInputSchema = z.object({
   ticketId: z.uuid(),
@@ -18,6 +19,7 @@ type OrderRow = {
   buyer_id: string | null;
   shopify_order_name: string | null;
   ordered_at: string | null;
+  source_payload: { financial_status?: unknown } | null;
 };
 
 type BuyerRow = {
@@ -36,6 +38,17 @@ type TicketRow = {
   invitation_sent_at: string | null;
   claimed_at: string | null;
   shopify_line_item_position: number;
+};
+
+type TicketInviteRow = Pick<
+  TicketRow,
+  "id" | "event_id" | "claim_token" | "product_title" | "status"
+> & {
+  price: string | number | null;
+  event_pass_types:
+    | { category: "free" | "paid" }
+    | { category: "free" | "paid" }[]
+    | null;
 };
 
 type EventRow = {
@@ -100,7 +113,7 @@ async function getOrderByManageToken(manageToken: string) {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("shopify_orders")
-    .select("id,buyer_id,shopify_order_name,ordered_at")
+    .select("id,buyer_id,shopify_order_name,ordered_at,source_payload")
     .eq("manage_token", manageToken)
     .maybeSingle();
 
@@ -246,7 +259,9 @@ export async function sendTicketInvite(
 
   const { data: ticket, error: ticketError } = await supabase
     .from("ticket_instances")
-    .select("id,event_id,claim_token,product_title,status")
+    .select(
+      "id,event_id,claim_token,product_title,status,price,event_pass_types(category)",
+    )
     .eq("id", input.ticketId)
     .eq("order_id", order.id)
     .maybeSingle();
@@ -259,10 +274,7 @@ export async function sendTicketInvite(
     return { error: "not_found" as const };
   }
 
-  const ticketRecord = ticket as Pick<
-    TicketRow,
-    "id" | "event_id" | "claim_token" | "product_title" | "status"
-  >;
+  const ticketRecord = ticket as TicketInviteRow;
 
   if (ticketRecord.status !== "unassigned") {
     return { error: "already_assigned" as const };
@@ -278,12 +290,26 @@ export async function sendTicketInvite(
     throw new Error(`Failed to load event: ${eventError.message}`);
   }
 
+  const passType = Array.isArray(ticketRecord.event_pass_types)
+    ? ticketRecord.event_pass_types[0]
+    : ticketRecord.event_pass_types;
+  const financialStatus =
+    typeof order.source_payload?.financial_status === "string"
+      ? order.source_payload.financial_status
+      : null;
+  const includeMarathonRegistration = includesMarathonRegistration({
+    financialStatus,
+    passTypeCategory: passType?.category ?? null,
+    price: ticketRecord.price,
+  });
+
   await sendAttendeeTicketClaimEmail({
     to: input.email,
     eventName: event?.name ? String(event.name) : null,
     orderName: order.shopify_order_name,
     ticketName: ticketRecord.product_title,
     claimUrl: getTicketClaimUrl(ticketRecord.claim_token),
+    includeMarathonRegistration,
     idempotencyKey: `ticket-invite-${ticketRecord.id}-${input.email}`,
   });
 
