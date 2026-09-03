@@ -2,8 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 import { env } from "@/env";
-import { sendAttendeeRegistrationConfirmationEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAndRecordAttendeeConfirmation } from "@/lib/tickets/attendee-confirmation";
 import {
   claimTicketInputSchema,
   generateClaimToken,
@@ -189,59 +189,7 @@ export async function createFreePassAttendee(
   }
 
   const attendeeId = String(data);
-  const emailSent = await sendConfirmation({
-    attendeeId,
-    email: input.email,
-    attendeeName: `${input.firstName}`.trim(),
-    event: currentEvent,
-    passTypeId: input.passTypeId,
-  });
+  const emailSent = await sendAndRecordAttendeeConfirmation(attendeeId);
 
   return { attendeeId, emailFailed: !emailSent };
-}
-
-async function sendConfirmation(args: {
-  attendeeId: string;
-  email: string;
-  attendeeName: string;
-  event: FreePassEvent;
-  passTypeId: string;
-}) {
-  const supabase = createAdminClient();
-
-  try {
-    const { data: passType } = await supabase
-      .from("event_pass_types")
-      .select("name")
-      .eq("id", args.passTypeId)
-      .maybeSingle();
-
-    await sendAttendeeRegistrationConfirmationEmail({
-      to: args.email,
-      attendeeName: args.attendeeName || null,
-      eventName: args.event.name,
-      passTypeName: passType?.name ? String(passType.name) : null,
-      eventStartsAt: args.event.startsAt,
-      idempotencyKey: `free-pass-confirmation-${args.attendeeId}`,
-    });
-  } catch (error) {
-    // The attendee is already recorded; a failed send must not undo that.
-    // confirmation_sent_at stays null so the send can be retried later.
-    console.error("Failed to send free pass confirmation email", error);
-    return false;
-  }
-
-  const { error } = await supabase
-    .from("attendees")
-    .update({ confirmation_sent_at: new Date().toISOString() })
-    .eq("id", args.attendeeId);
-
-  if (error) {
-    console.error(
-      "Failed to record free pass confirmation timestamp",
-      error.message,
-    );
-  }
-
-  return true;
 }

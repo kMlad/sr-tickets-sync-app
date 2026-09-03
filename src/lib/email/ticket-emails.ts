@@ -5,6 +5,8 @@ import { sendTransactionalEmail } from "@/lib/email/resend";
 const SKOPJE_MARATHON_REGISTRATION_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSce2niDL6FbhOC-wWszgvQPPi1tdz1sEEJ0lUnxEBW06wBJVA/viewform?usp=header";
 
+const IM_ATTENDING_URL = "https://startuprevolution.ai/pages/im-attending";
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -82,9 +84,13 @@ export async function sendAttendeeRegistrationConfirmationEmail(args: {
   const subject = `You're confirmed for ${eventName}`;
   const text = `${greeting}
 
-Your ${passTypeName} for ${eventName} is confirmed. 
+Your ${passTypeName} for ${eventName} is confirmed.
 
 There is nothing else you need to do for now. We'll send the event ticket over once it's ready.
+
+In the meantime, let the world you're joining the revolution!
+The button below takes you to a page where you can generate an image and post it on social.
+${IM_ATTENDING_URL}
 
 Excited to see you there!
 
@@ -94,7 +100,10 @@ The Startup Revolution Team`;
   const html = emailShell(`
     <p style="margin:0 0 16px">${escapeHtml(greeting)}</p>
     <p style="margin:0 0 16px">Your <strong>${escapeHtml(passTypeName)}</strong> for ${escapeHtml(eventName)} is confirmed.</p>
-    <p style="margin:0 0 24px">There is nothing else you need to do for now. We'll send the event ticket over once it's ready.</p>
+    <p style="margin:0 0 16px">There is nothing else you need to do for now. We'll send the event ticket over once it's ready.</p>
+    <p style="margin:0 0 16px">In the meantime, let the world you're joining the revolution!</p>
+    <p style="margin:0 0 16px">The button below takes you to a page where you can generate an image and post it on social.</p>
+    <p style="margin:0 0 24px">${linkHtml(IM_ATTENDING_URL, "Generate Image")}</p>
     <p style="margin:0 0 16px">Excited to see you there!</p>
     <p style="margin:0;color:#52525b;font-size:14px">Best,<br />The Startup Revolution Team</p>
   `);

@@ -28,5 +28,9 @@ export async function submitClaim(formData: FormData) {
     redirect(`/claim/${encodeURIComponent(token)}?error=${result.error}`);
   }
 
-  redirect(`/claim/${encodeURIComponent(token)}?claimed=1`);
+  redirect(
+    result.emailFailed
+      ? `/claim/${encodeURIComponent(token)}?claimed=1&error=email_failed`
+      : `/claim/${encodeURIComponent(token)}?claimed=1`,
+  );
 }

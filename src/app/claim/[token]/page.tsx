@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { submitClaim } from "@/app/claim/[token]/actions";
-import { SubmitButton } from "@/components/ui/SubmitButton";
 import {
   errorMessageClass,
   inputClass,
@@ -9,6 +8,7 @@ import {
   successMessageClass,
 } from "@/components/ui/classes";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { getTicketClaimDetails } from "@/lib/tickets/claims";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +37,10 @@ function errorMessage(error: string | undefined) {
     return "Enter the required attendee details and a valid email address.";
   }
 
+  if (error === "email_failed") {
+    return "Ticket assigned, but the confirmation email could not be sent.";
+  }
+
   return null;
 }
 
@@ -54,9 +58,12 @@ export default async function ClaimTicketPage({
     notFound();
   }
 
-  const message = errorMessage(singleValue(query.error));
+  const error = singleValue(query.error);
+  const message = errorMessage(error);
   const eventDate = formatEventDate(claimDetails.event?.startsAt ?? null);
   const isAssigned = claimDetails.ticket.status === "assigned";
+  const justClaimed = singleValue(query.claimed) === "1";
+  const emailFailed = error === "email_failed";
 
   return (
     <main className="relative flex min-h-screen items-start justify-center overflow-hidden bg-void px-4 py-12 text-cream">
@@ -98,6 +105,14 @@ export default async function ClaimTicketPage({
           {isAssigned ? (
             <div className="pt-5">
               <p className={successMessageClass}>Ticket assigned</p>
+              {justClaimed && !emailFailed ? (
+                <p className="mt-3 text-sm text-cream/70">
+                  A confirmation email is on its way.
+                </p>
+              ) : null}
+              {justClaimed && emailFailed && message ? (
+                <p className={`${errorMessageClass} mt-3`}>{message}</p>
+              ) : null}
               {claimDetails.attendee ? (
                 <div className="mt-5 grid gap-4 text-sm">
                   <div>

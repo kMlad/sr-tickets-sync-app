@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { getShopifyAppUrl } from "@/lib/shopify/utils";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendAndRecordAttendeeConfirmation } from "@/lib/tickets/attendee-confirmation";
 
 export type TicketClaimDetails = {
   ticket: {
@@ -162,7 +163,10 @@ export async function claimTicket(
   });
 
   if (!error) {
-    return { attendeeId: String(data) };
+    const attendeeId = String(data);
+    const emailSent = await sendAndRecordAttendeeConfirmation(attendeeId);
+
+    return { attendeeId, emailFailed: !emailSent };
   }
 
   if (error.message.includes("ticket_already_claimed")) {
