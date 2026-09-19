@@ -177,5 +177,12 @@ export async function claimTicket(
     return { error: "not_found" as const };
   }
 
+  if (
+    error.message.includes("attendees_admin_event_email_key") ||
+    error.message.includes("attendee_email_exists")
+  ) {
+    return { error: "email_exists" as const };
+  }
+
   throw new Error(`Failed to claim ticket: ${error.message}`);
 }

@@ -2,6 +2,7 @@ import "server-only";
 
 import { env } from "@/env";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { PassTypeCategory } from "@/lib/tickets/pass-types";
 
 export type ConfigEvent = {
   id: string;
@@ -28,7 +29,7 @@ export type ConfigPassType = {
   eventId: string;
   eventName: string;
   name: string;
-  category: "free" | "paid";
+  category: PassTypeCategory;
   createdAt: string;
 };
 
@@ -54,7 +55,7 @@ type PassTypeRow = {
   id: string;
   event_id: string;
   name: string;
-  category: "free" | "paid";
+  category: PassTypeCategory;
   created_at: string;
 };
 

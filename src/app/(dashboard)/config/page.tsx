@@ -46,7 +46,7 @@ function statusMessage(status: string | undefined) {
     case "mapping-invalid":
       return "Choose an event, enter numeric Shopify IDs, and select a ticket type for variant mappings.";
     case "current-event-set":
-      return "Current event updated. Free passes are now issued for it.";
+      return "Current event updated. Free passes and media passes are now issued for it.";
     case "current-event-invalid":
       return "Choose a valid event to set as current.";
     case "pass-type-created":
@@ -93,7 +93,8 @@ export default async function ConfigPage({
         <p className={`mt-3 max-w-2xl ${subtleTextClass}`}>
           Map Shopify ticket products to Startup Rev events for{" "}
           <span className="font-medium text-cream">{config.shop}</span>, pick
-          the current event, and define ticket types for paid and free passes.
+          the current event, and define ticket types for paid, free, and media
+          passes.
         </p>
       </section>
 
@@ -200,7 +201,9 @@ export default async function ConfigPage({
           <h2 className={h2Class}>Add ticket type</h2>
           <p className="mt-2 text-sm text-cream/60">
             Paid types can be assigned to Shopify products or variants. Free
-            types are available when issuing passes manually.
+            types are available when issuing passes manually. Media types are
+            used for complimentary press passes. Agorify imports them as type
+            attendee and uses this name as the badge type.
           </p>
           <form action={createPassType} className="mt-5 flex flex-col gap-4">
             <label className="flex flex-col gap-2">
@@ -237,6 +240,7 @@ export default async function ConfigPage({
               <select className={selectClass} name="category" required>
                 <option value="paid">Paid</option>
                 <option value="free">Free</option>
+                <option value="media">Media</option>
               </select>
             </label>
 
@@ -254,8 +258,8 @@ export default async function ConfigPage({
 
         {config.passTypes.length === 0 ? (
           <p className="px-6 py-8 text-sm text-cream/60">
-            No ticket types yet. Add one before mapping variants or issuing free
-            passes.
+            No ticket types yet. Add one before mapping variants, issuing free
+            passes, or issuing media passes.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -371,7 +375,8 @@ export default async function ConfigPage({
           <div>
             <h2 className={h2Class}>Events</h2>
             <p className="mt-1 text-sm text-cream/60">
-              The current event is the one free passes are issued for.
+              The current event is the one free passes and media passes are
+              issued for.
             </p>
           </div>
         </div>

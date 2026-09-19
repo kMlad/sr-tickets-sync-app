@@ -101,4 +101,23 @@ describe("Shopify product mappings", () => {
       true,
     );
   });
+
+  test("does not treat media pass mappings as paid", () => {
+    assert.equal(
+      hasPaidTicketMapping(
+        [
+          {
+            event_id: "event-media",
+            shopify_product_id: "100",
+            shopify_variant_id: "400",
+            pass_type_id: "media-ticket-type",
+            ticket_type_name: "Media",
+            ticket_type_category: "media",
+          },
+        ],
+        [{ passTypeId: "media-ticket-type", price: "100.00" }],
+      ),
+      false,
+    );
+  });
 });

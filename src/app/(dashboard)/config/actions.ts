@@ -36,7 +36,7 @@ const setCurrentEventSchema = z.object({
 const passTypeSchema = z.object({
   eventId: z.uuid(),
   name: z.string().trim().min(1).max(160),
-  category: z.enum(["free", "paid"]),
+  category: z.enum(["free", "paid", "media"]),
 });
 
 const deletePassTypeSchema = z.object({
@@ -168,6 +168,7 @@ export async function setCurrentEvent(formData: FormData) {
 
   revalidatePath("/config");
   revalidatePath("/free-passes");
+  revalidatePath("/media-passes");
   configRedirect("current-event-set");
 }
 
@@ -202,6 +203,7 @@ export async function createPassType(formData: FormData) {
 
   revalidatePath("/config");
   revalidatePath("/free-passes");
+  revalidatePath("/media-passes");
   configRedirect("pass-type-created");
 }
 
@@ -233,6 +235,7 @@ export async function deletePassType(formData: FormData) {
 
   revalidatePath("/config");
   revalidatePath("/free-passes");
+  revalidatePath("/media-passes");
   configRedirect("pass-type-deleted");
 }
 

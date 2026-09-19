@@ -33,6 +33,10 @@ function errorMessage(error: string | undefined) {
     return "This ticket has already been assigned.";
   }
 
+  if (error === "email_exists") {
+    return "Someone with that email is already registered for this event.";
+  }
+
   if (error === "invalid") {
     return "Enter the required attendee details and a valid email address.";
   }

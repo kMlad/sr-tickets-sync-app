@@ -1,5 +1,7 @@
+import type { PassTypeCategory } from "@/lib/tickets/pass-types";
+
 export function isPaidTicket(args: {
-  passTypeCategory: "free" | "paid" | null;
+  passTypeCategory: PassTypeCategory | null;
   price: string | number | null;
 }) {
   if (args.passTypeCategory) {

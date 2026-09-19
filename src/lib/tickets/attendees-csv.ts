@@ -1,3 +1,6 @@
+// Agorify CSV `type` must be one of: attendee, speaker, sponsor, exhibitor, or
+// organizer. Media is not a valid attendee type; those rows export as type=attendee
+// with `badgetype` set from the media pass type name (for example "Media").
 export const AGORIFY_ATTENDEE_CSV_HEADERS = [
   "email",
   "firstname",

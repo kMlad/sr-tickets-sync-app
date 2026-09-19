@@ -1,3 +1,4 @@
+import type { PassTypeCategory } from "@/lib/tickets/pass-types";
 import { isPaidTicket } from "@/lib/tickets/ticket-payment";
 
 export type ShopifyProductMapping = {
@@ -6,7 +7,7 @@ export type ShopifyProductMapping = {
   shopify_variant_id: string | null;
   pass_type_id: string | null;
   ticket_type_name: string | null;
-  ticket_type_category: "free" | "paid" | null;
+  ticket_type_category: PassTypeCategory | null;
 };
 
 function mappingKey(productId: string, variantId: string | null) {
@@ -52,7 +53,7 @@ export function hasPaidTicketMapping(
           mapping,
         ): mapping is ShopifyProductMapping & {
           pass_type_id: string;
-          ticket_type_category: "free" | "paid";
+          ticket_type_category: PassTypeCategory;
         } =>
           mapping.pass_type_id !== null &&
           mapping.ticket_type_category !== null,

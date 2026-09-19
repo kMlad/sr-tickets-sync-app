@@ -51,6 +51,7 @@ export function statusBadgeClass(status: string) {
     case "failed":
     case "error":
       return `${base} border-magenta/30 bg-magenta/10 text-magenta`;
+    case "media":
     case "pending":
     case "draft":
       return `${base} border-orange/30 bg-orange/10 text-orange`;

@@ -29,6 +29,28 @@ describe("buildAgorifyAttendeesCsv", () => {
     assert.equal(row?.split(",").at(-1), "on-site");
   });
 
+  test("exports media passes as Agorify attendee type with a Media badge", () => {
+    const csv = buildAgorifyAttendeesCsv([
+      {
+        email: "press@example.com",
+        firstName: "Nellie",
+        lastName: "Bly",
+        attendeeType: "attendee",
+        affiliation: "The World",
+        title: "Journalist",
+        badgeType: "Media",
+        phone: null,
+        addedInAgorify: false,
+      },
+    ]);
+
+    const row = csv.split("\r\n")[1];
+    const columns = row?.split(",");
+
+    assert.equal(columns?.[3], "attendee");
+    assert.equal(columns?.[6], "Media");
+  });
+
   test("does not export attendees already added to Agorify", () => {
     const csv = buildAgorifyAttendeesCsv([
       {

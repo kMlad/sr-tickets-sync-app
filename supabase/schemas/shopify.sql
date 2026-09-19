@@ -52,7 +52,7 @@ create table public.event_pass_types (
   event_id uuid not null,
   shop text not null,
   name text not null,
-  category text not null default 'free' check (category in ('free', 'paid')),
+  category text not null default 'free' check (category in ('free', 'paid', 'media')),
   created_at timestamptz not null default now(),
   foreign key (event_id, shop) references public.events (id, shop) on delete cascade,
   unique (event_id, name)
@@ -95,6 +95,7 @@ create table public.shopify_orders (
   order_number text,
   buyer_id uuid references public.buyers (id) on delete set null,
   manage_token text not null default encode(extensions.gen_random_bytes(32), 'hex'),
+  source text not null default 'shopify' check (source in ('shopify', 'admin')),
   buyer_notification_sent_at timestamptz,
   currency_code text,
   total_price numeric,
@@ -269,6 +270,7 @@ begin
     order_id,
     buyer_id,
     pass_type_id,
+    source,
     name,
     first_name,
     last_name,
@@ -286,6 +288,7 @@ begin
     v_ticket.order_id,
     v_ticket.buyer_id,
     v_ticket.pass_type_id,
+    v_ticket.source,
     concat_ws(' ', trim(p_first_name), trim(p_last_name)),
     trim(p_first_name),
     trim(p_last_name),
@@ -363,7 +366,7 @@ begin
     and event_id = p_event_id
     and shop = p_shop;
 
-  if not found then
+  if not found or v_pass_type.category <> 'free' then
     raise exception 'pass_type_not_found';
   end if;
 
@@ -433,6 +436,114 @@ begin
   returning id into v_attendee_id;
 
   return v_attendee_id;
+end;
+$$;
+
+create or replace function public.create_media_pass_batch(
+  p_shop text,
+  p_event_id uuid,
+  p_pass_type_id uuid,
+  p_email text,
+  p_quantity integer
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_pass_type public.event_pass_types%rowtype;
+  v_email text := lower(trim(p_email));
+  v_buyer_id uuid;
+  v_order_id uuid;
+  v_i integer;
+begin
+  if p_quantity < 1 or p_quantity > 50 then
+    raise exception 'invalid_quantity';
+  end if;
+
+  select *
+  into v_pass_type
+  from public.event_pass_types
+  where id = p_pass_type_id
+    and event_id = p_event_id
+    and shop = p_shop
+    and category = 'media';
+
+  if not found then
+    raise exception 'pass_type_not_found';
+  end if;
+
+  select id
+  into v_buyer_id
+  from public.buyers
+  where shop = p_shop
+    and email = v_email
+  order by created_at desc
+  limit 1;
+
+  if v_buyer_id is null then
+    insert into public.buyers (shop, email)
+    values (p_shop, v_email)
+    returning id into v_buyer_id;
+  end if;
+
+  insert into public.shopify_orders (
+    shop,
+    shopify_order_id,
+    shopify_order_name,
+    buyer_id,
+    total_price,
+    ordered_at,
+    source,
+    source_payload
+  )
+  values (
+    p_shop,
+    'admin-media-' || gen_random_uuid()::text,
+    'Media passes',
+    v_buyer_id,
+    0,
+    now(),
+    'admin',
+    jsonb_build_object(
+      'source', 'admin',
+      'kind', 'media_passes',
+      'event_id', p_event_id,
+      'quantity', p_quantity,
+      'email', v_email
+    )
+  )
+  returning id into v_order_id;
+
+  for v_i in 1..p_quantity loop
+    insert into public.ticket_instances (
+      shop,
+      event_id,
+      order_id,
+      buyer_id,
+      pass_type_id,
+      source,
+      product_title,
+      price,
+      claim_token,
+      shopify_line_item_position,
+      status
+    )
+    values (
+      p_shop,
+      p_event_id,
+      v_order_id,
+      v_buyer_id,
+      v_pass_type.id,
+      'admin',
+      v_pass_type.name,
+      0,
+      encode(extensions.gen_random_bytes(32), 'hex'),
+      v_i,
+      'unassigned'
+    );
+  end loop;
+
+  return v_order_id;
 end;
 $$;
 

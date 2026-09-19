@@ -266,11 +266,9 @@ export default async function AttendeesPage({
                       {attendee.event?.name ?? "Unmapped event"}
                     </td>
                     <td className={tableTdClass}>
-                      {attendee.source === "admin"
-                        ? "Free pass"
-                        : (attendee.order?.name ??
-                          attendee.order?.number ??
-                          "Order")}
+                      {attendee.order?.name ??
+                        attendee.order?.number ??
+                        (attendee.source === "admin" ? "Free pass" : "Order")}
                     </td>
                     <td className={tableTdClass}>
                       <form action={setAttendeeAgorifyStatus}>

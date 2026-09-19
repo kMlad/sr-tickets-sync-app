@@ -5,6 +5,7 @@ import { sendBuyerTicketManagementEmail } from "@/lib/email/ticket-emails";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { generateClaimToken } from "@/lib/tickets/claims";
 import { getTicketManageUrl } from "@/lib/tickets/order-management";
+import type { PassTypeCategory } from "@/lib/tickets/pass-types";
 import { hasSuccessfulShopifyPayment } from "@/lib/tickets/shopify-order-payment";
 import {
   findShopifyProductMapping,
@@ -55,8 +56,8 @@ type ProductMappingRow = {
   shopify_variant_id: string | null;
   pass_type_id: string | null;
   event_pass_types:
-    | { name: string; category: "free" | "paid" }
-    | { name: string; category: "free" | "paid" }[]
+    | { name: string; category: PassTypeCategory }
+    | { name: string; category: PassTypeCategory }[]
     | null;
 };
 

@@ -28,6 +28,43 @@ function emailShell(content: string) {
 </html>`;
 }
 
+export async function sendMediaPassManagementEmail(args: {
+  to: string;
+  orderName: string | null;
+  manageUrl: string;
+  ticketCount: number;
+  idempotencyKey: string;
+}) {
+  const passLabel = args.ticketCount === 1 ? "media pass" : "media passes";
+  const subject = args.orderName
+    ? `Assign attendees for ${args.orderName}`
+    : "Assign your Startup Rev media passes";
+  const text = `Hi,
+
+You've been issued ${args.ticketCount} complimentary ${passLabel} for Startup Rev.
+
+Use this private link to send each attendee their ticket assignment link:
+${args.manageUrl}
+
+Each attendee will be able to fill in their own information.`;
+
+  const html = emailShell(`
+    <p style="margin:0 0 16px">Hi,</p>
+    <p style="margin:0 0 16px">You've been issued ${args.ticketCount} complimentary ${escapeHtml(passLabel)} for Startup Rev.</p>
+    <p style="margin:0 0 24px">Use this private link to send each attendee their ticket assignment link.</p>
+    <p style="margin:0 0 24px">${linkHtml(args.manageUrl, "Assign attendees")}</p>
+    <p style="margin:0;color:#52525b;font-size:14px">Each attendee will be able to fill in their own information.</p>
+  `);
+
+  return sendTransactionalEmail({
+    to: args.to,
+    subject,
+    text,
+    html,
+    idempotencyKey: args.idempotencyKey,
+  });
+}
+
 export async function sendBuyerTicketManagementEmail(args: {
   to: string;
   buyerName: string | null;
